@@ -84,11 +84,11 @@ def bench(k, m):
     # for f in [_encode_data_not_really, _encode_data_easyfec, _encode_data_fec,]:
     print "measuring encoding of data with K=%d, M=%d, reporting results in nanoseconds per byte after encoding %d bytes %d times in a row..." % (k, m, SIZE, MAXREPS)
     # for f in [_encode_data_fec, _encode_data_not_really]:
-    for f in [_encode_data_fec]:
+    for f in [_encode_data_easyfec]:
         def _init_func(size):
             return _make_new_rand_data(size, k, m)
         for BSIZE in [SIZE]:
-            results = benchutil.rep_bench(f, n=BSIZE, initfunc=_init_func, MAXREPS=MAXREPS, MAXTIME=None, UNITS_PER_SECOND=1000000000)
+            results = benchutil.rep_bench(f, n=BSIZE, initfunc=_init_func, runreps=MAXREPS, UNITS_PER_SECOND=1000000000)
             print "and now represented in MB/s..."
             print
             best = results['best']

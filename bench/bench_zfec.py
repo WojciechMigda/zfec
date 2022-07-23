@@ -1,79 +1,23 @@
 from zfec import easyfec, Encoder, filefec
-from pyutil import mathutil
 
 import os, sys
 
 from pyutil import benchutil
 
-FNAME="benchrandom.data"
-
-def _make_new_rand_file(size):
-    open(FNAME, "wb").write(os.urandom(size))
-
-def donothing(results, reslenthing):
-    pass
-
 K=3
 M=10
 
 d = ""
-ds = []
 easyfecenc = None
-fecenc = None
 def _make_new_rand_data(size, k, m):
-    global d, easyfecenc, fecenc, K, M
+    global d, easyfecenc, K, M
     K = k
     M = m
     d = os.urandom(size)
-    del ds[:]
-    ds.extend([None]*k)
-    blocksize = mathutil.div_ceil(size, k)
-    for i in range(k):
-        ds[i] = d[i*blocksize:(i+1)*blocksize]
-    ds[-1] = ds[-1] + "\x00" * (len(ds[-2]) - len(ds[-1]))
     easyfecenc = easyfec.Encoder(k, m)
-    fecenc = Encoder(k, m)
-
-import sha
-hashers = [ sha.new() for i in range(M) ]
-def hashem(results, reslenthing):
-    for i, result in enumerate(results):
-        hashers[i].update(result)
-
-def _encode_file(N):
-    filefec.encode_file(open(FNAME, "rb"), donothing, K, M)
-
-def _encode_file_stringy(N):
-    filefec.encode_file_stringy(open(FNAME, "rb"), donothing, K, M)
-
-def _encode_file_stringy_easyfec(N):
-    filefec.encode_file_stringy_easyfec(open(FNAME, "rb"), donothing, K, M)
-
-def _encode_file_not_really(N):
-    filefec.encode_file_not_really(open(FNAME, "rb"), donothing, K, M)
-
-def _encode_file_not_really_and_hash(N):
-    filefec.encode_file_not_really_and_hash(open(FNAME, "rb"), donothing, K, M)
-
-def _encode_file_and_hash(N):
-    filefec.encode_file(open(FNAME, "rb"), hashem, K, M)
-
-def _encode_data_not_really(N):
-    # This function is to see how long it takes to run the Python code
-    # that does this benchmarking and accounting and so on but not
-    # actually do any erasure-coding, in order to get an idea of how
-    # much overhead there is in using Python.  This exercises the
-    # basic behavior of allocating buffers to hold the secondary
-    # shares.
-    sz = N // K
-    for i in range(M-K):
-        x = '\x00' * sz
 
 def _encode_data_easyfec(N):
     easyfecenc.encode(d)
-
-def _encode_data_fec(N):
-    fecenc.encode(ds)
 
 def bench(k, m):
     SIZE = 10**6

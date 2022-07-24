@@ -21,6 +21,7 @@ typedef struct parsed_args_s
     unsigned short m;
     unsigned int runiters;
     unsigned int runreps;
+    unsigned long data_sz;
 } parsed_args_t;
 
 int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
@@ -39,6 +40,7 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
     parsed_p->m = 10;
     parsed_p->runiters = 10;
     parsed_p->runreps = 64;
+    parsed_p->data_sz = 100000;
 
     while ((--argc > 0) && ((*++argv)[0] == '-'))
     {
@@ -126,6 +128,26 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
                     }
                     break;
                 }
+                case 's':
+                {
+                    if (--argc > 0)
+                    {
+                        long val = atol(argv[1]);
+                        if (val >= 1)
+                        {
+                            parsed_p->data_sz = val;
+                        }
+                        else
+                        {
+                            fprintf(stderr, "Invalid size of data to benchmark: %s\n", argv[1]);
+                            argc = 0;
+                        }
+
+                        argv++;
+                        *argv+= strlen(*argv) - 1;
+                    }
+                    break;
+                }
                 case 'q':
                     parsed_p->quiet = TRUE;
                     break;
@@ -159,6 +181,7 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
             "         -k UINT64 how many of blocks produced are necessary to reconstruct the original data, 1 <= k <= m\n"
             "         -i UINT64 number of iterations\n"
             "         -r UINT64 number of repetitions within each iteration\n"
+            "         -s UINT64 size of data to benchmark\n"
             "         -q        quiet mode, do not print anything to the console\n"
             "         -h        show help\n");
 
@@ -214,7 +237,7 @@ int main(int argc, char **argv)
     }
 
     size_t const UNITS_PER_SECOND = 1000000000;
-    size_t const DATA_SZ = 1000000;
+    size_t const DATA_SZ = parsed_args.data_sz;
     size_t const fec_sz = (DATA_SZ + parsed_args.k - 1) / parsed_args.k;
 
     printf("measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);

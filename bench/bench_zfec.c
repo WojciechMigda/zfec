@@ -176,7 +176,7 @@ gf *random_fill(gf *data_p, size_t sz)
     }
 
     srand(time(0));
-    
+
     size_t ix = 0;
 
     for (ix = 0; ix < sz; ++ix)
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     parsed_args_t parsed_args;
 
     int const parsed_status = parse_args(argc, argv, &parsed_args);
-    
+
     if (parsed_status != EXIT_SUCCESS)
     {
         return parsed_status;
@@ -216,7 +216,9 @@ int main(int argc, char **argv)
     size_t const UNITS_PER_SECOND = 1000000000;
     size_t const DATA_SZ = 1000000;
     size_t const fec_sz = (DATA_SZ + parsed_args.k - 1) / parsed_args.k;
-    
+
+    printf("measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
+
     /*
      * I allocate chunk of memory that will be already padded
      * to a multiple of fec_sz.
@@ -229,7 +231,7 @@ int main(int argc, char **argv)
     unsigned int *block_nums_p = calloc(num_block_nums, sizeof (unsigned int));
     gf const **incblocks_pp = calloc(parsed_args.k, sizeof (gf *));
     gf **fecs_pp = calloc(num_block_nums, sizeof (gf *));
-    
+
     size_t ix = 0;
 
     /* allocate placeholders for resulting blocks */
@@ -281,7 +283,7 @@ int main(int argc, char **argv)
     double const mthworst = mth > 0 ? tls_p[parsed_args.runiters - mth] : tls_p[parsed_args.runiters - 1];
 
     if (parsed_args.quiet == FALSE)
-    {    
+    {
         printf(
             "best: %8.03e,"
             " %3dth-best: %8.03e,"

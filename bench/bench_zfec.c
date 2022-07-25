@@ -17,11 +17,13 @@ typedef struct parsed_args_s
 {
     bool_t help;
     bool_t quiet;
+    bool_t xsums;
     unsigned short k;
     unsigned short m;
     unsigned int runiters;
     unsigned int runreps;
     unsigned long data_sz;
+    void *static_pattern;
 } parsed_args_t;
 
 int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
@@ -36,11 +38,13 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
 
     /* initialize default arguments */
     parsed_p->quiet = FALSE;
+    parsed_p->xsums = FALSE;
     parsed_p->k = 3;
     parsed_p->m = 10;
     parsed_p->runiters = 10;
     parsed_p->runreps = 64;
-    parsed_p->data_sz = 100000;
+    parsed_p->data_sz = 1000000;
+    parsed_p->static_pattern = NULL;
 
     while ((--argc > 0) && ((*++argv)[0] == '-'))
     {
@@ -148,6 +152,23 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
                     }
                     break;
                 }
+                case 'p':
+                {
+                    if (--argc > 0)
+                    {
+                        /* no strdup with c99 flag */
+                        size_t const ssz = strlen(argv[1]);
+                        parsed_p->static_pattern = malloc(ssz + 1);
+                        strcpy(parsed_p->static_pattern, argv[1]);
+
+                        argv++;
+                        *argv+= strlen(*argv) - 1;
+                    }
+                    break;
+                }
+                case 'x':
+                    parsed_p->xsums = TRUE;
+                    break;
                 case 'q':
                     parsed_p->quiet = TRUE;
                     break;
@@ -182,6 +203,8 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
             "         -i UINT64 number of iterations\n"
             "         -r UINT64 number of repetitions within each iteration\n"
             "         -s UINT64 size of data to benchmark\n"
+            "         -p STRING static pattern to concatenate as an input\n"
+            "         -x        report calculated checksums\n"
             "         -q        quiet mode, do not print anything to the console\n"
             "         -h        show help\n");
 
@@ -209,6 +232,51 @@ gf *random_fill(gf *data_p, size_t sz)
 
     return data_p;
 }
+
+gf *pattern_fill(gf *data_p, size_t sz, void *patt_p)
+{
+    if ((data_p == NULL) || (patt_p == NULL))
+    {
+        return data_p;
+    }
+
+    gf const *str_p = (gf const *)patt_p;
+    size_t const str_sz = strlen(patt_p);
+    size_t ix = 0;
+
+    for (ix = 0; ix < sz; ++ix)
+    {
+        data_p[ix] = str_p[ix % str_sz];
+    }
+
+    return data_p;
+}
+
+uint16_t checksum(const uint8_t *data, size_t len)
+{
+    uint32_t c0, c1;
+
+    for (c0 = c1 = 0; len > 0; )
+    {
+        size_t blocklen = len;
+
+        if (blocklen > 5002)
+        {
+            blocklen = 5002;
+        }
+        len -= blocklen;
+        do
+        {
+            c0 = c0 + *data++;
+            c1 = c1 + c0;
+        } while (--blocklen);
+        c0 = c0 % 255;
+    	c1 = c1 % 255;
+    }
+
+    return (c1 << 8 | c0);
+}
+
 
 double now()
 {
@@ -240,7 +308,10 @@ int main(int argc, char **argv)
     size_t const DATA_SZ = parsed_args.data_sz;
     size_t const fec_sz = (DATA_SZ + parsed_args.k - 1) / parsed_args.k;
 
-    printf("measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
+    if (parsed_args.quiet == FALSE)
+    {
+        printf("measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
+    }
 
     /*
      * I allocate chunk of memory that will be already padded
@@ -278,15 +349,37 @@ int main(int argc, char **argv)
     size_t it = 0;
     double *tls_p = calloc(parsed_args.runiters, sizeof (double));
 
+    if (parsed_args.static_pattern != NULL)
+    {
+        pattern_fill(data_p, DATA_SZ, parsed_args.static_pattern);
+
+        if ((parsed_args.quiet == FALSE) && (parsed_args.xsums == TRUE))
+        {
+            printf("Input checksum: %04X\n", checksum(data_p, DATA_SZ));
+        }
+    }
+
     for (it = 0; it < parsed_args.runiters; ++it)
     {
-        random_fill(data_p, DATA_SZ);
+        if (parsed_args.static_pattern == NULL)
+        {
+            random_fill(data_p, DATA_SZ);
+        }
 
         double const t0 = now();
 
         for (rit = 0; rit < parsed_args.runreps; ++rit)
         {
             fec_encode(fec_p, incblocks_pp, fecs_pp, block_nums_p, num_block_nums, fec_sz);
+
+            if ((parsed_args.static_pattern != NULL) &&
+                (parsed_args.quiet == FALSE) && (parsed_args.xsums == TRUE))
+            {
+                for (ix = 0; ix < num_block_nums; ++ix)
+                {
+                    printf("fec[%zu] %04X\n", ix, checksum(fecs_pp[ix], fec_sz));
+                }
+            }
         }
 
         tls_p[it] = (UNITS_PER_SECOND / DATA_SZ) * (now() - t0) / parsed_args.runreps;
@@ -328,6 +421,7 @@ int main(int argc, char **argv)
         printf("worst: %4.3f MB/sec\n", 1e3 / worst);
     }
 
+    free(parsed_args.static_pattern);
     free(tls_p);
     free(block_nums_p);
     free(incblocks_pp);

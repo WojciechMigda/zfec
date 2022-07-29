@@ -304,12 +304,18 @@ int main(int argc, char **argv)
         return parsed_status;
     }
 
+    if (parsed_args.help == TRUE)
+    {
+        return EXIT_SUCCESS;
+    }
+
     size_t const UNITS_PER_SECOND = 1000000000;
     size_t const DATA_SZ = parsed_args.data_sz;
     size_t const fec_sz = (DATA_SZ + parsed_args.k - 1) / parsed_args.k;
 
     if (parsed_args.quiet == FALSE)
     {
+        printf("Built with:\n  STRIDE=%d\n", STRIDE);
         printf("measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
     }
 
@@ -436,4 +442,3 @@ int main(int argc, char **argv)
 
     return EXIT_SUCCESS;
 }
-

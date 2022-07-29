@@ -51,6 +51,17 @@ Note that in order to run the Haskell API tests you must have installed the
 library first due to the fact that the interpreter cannot process FEC.hs as
 it takes a reference to an FFI function.
 
+To install ``zfec`` built with custom compilation flags, execute:
+
+``CFLAGS="-O3" pip install git+https://github.com/WojciechMigda/zfec.git``
+
+If ``zfec`` is already cloned locally, then custom compiler flags can be passed to ``setup.py`` to install ``zfec`` like follows:
+
+``CFLAGS="-O3" python setup.py install``
+
+In similar manner, one can override compiler being used. Simply issue:
+
+``CC=arm-linux-gnueabihf-gcc-7 pip install git+https://github.com/WojciechMigda/zfec.git``
 
 Community
 ---------

@@ -74,6 +74,17 @@ jobs:
         run: |
           python3 -m cibuildwheel --output-dir wheelhouse
 
+      - name: "Set CC=gcc on windows-latest"
+        shell: bash
+        if: runner.os == 'Windows'
+        run: echo "CC=gcc" >> $GITHUB_ENV
+
+      - name: "Build benchmark tool"
+        run: |
+          make -C bench bench_zfec STRIDE=4096
+          bench/bench_zfec -h
+        shell: bash
+
       - uses: actions/upload-artifact@v2
         name: Upload artifacts
         with:

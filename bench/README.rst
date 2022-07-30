@@ -42,8 +42,8 @@ Building
 
 To build ``bench_zfec`` simply execute ``make`` pointing it to ``Makefile`` which resides in the same folder as ``bench_zfec.c`` file and this README. ``CC`` and ``CFLAGS`` environment variables apply.
 
-Default value of compile-time parameter ``STRIDE`` can be overriden by executing:
+Default value of compile-time parameters ``STRIDE`` and ``UNROLL`` can be overriden by executing:
 
 ::
 
-  make STRIDE=<new value>
+  make STRIDE=<new value> UNROLL=<new value>

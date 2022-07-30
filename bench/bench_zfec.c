@@ -37,6 +37,7 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
     }
 
     /* initialize default arguments */
+    parsed_p->help = FALSE;
     parsed_p->quiet = FALSE;
     parsed_p->xsums = FALSE;
     parsed_p->k = 3;

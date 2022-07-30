@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 
     if (parsed_args.quiet == FALSE)
     {
-        printf("Built with:\n  STRIDE=%d\n", STRIDE);
+        printf("Built with:\n  STRIDE=%d\n  UNROLL=%d\n", STRIDE, UNROLL);
         printf("measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
     }
 

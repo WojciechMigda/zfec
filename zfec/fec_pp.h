@@ -4,6 +4,13 @@
 #define PP_EXPAND(...) __VA_ARGS__
 
 #define PP_REPEAT_2(ss) ss(0) ss(1)
+
+/*
+ * generated with
+ *
+ * for i in `seq 2 63` ; do echo \#define PP_REPEAT_$(($i + 1))\(ss\) PP_REPEAT_$i\(ss\) ss\($i\) ; done
+ *
+ */
 #define PP_REPEAT_3(ss) PP_REPEAT_2(ss) ss(2)
 #define PP_REPEAT_4(ss) PP_REPEAT_3(ss) ss(3)
 #define PP_REPEAT_5(ss) PP_REPEAT_4(ss) ss(4)
@@ -43,6 +50,29 @@
 #define PP_REPEAT_39(ss) PP_REPEAT_38(ss) ss(38)
 #define PP_REPEAT_40(ss) PP_REPEAT_39(ss) ss(39)
 #define PP_REPEAT_41(ss) PP_REPEAT_40(ss) ss(40)
+#define PP_REPEAT_42(ss) PP_REPEAT_41(ss) ss(41)
+#define PP_REPEAT_43(ss) PP_REPEAT_42(ss) ss(42)
+#define PP_REPEAT_44(ss) PP_REPEAT_43(ss) ss(43)
+#define PP_REPEAT_45(ss) PP_REPEAT_44(ss) ss(44)
+#define PP_REPEAT_46(ss) PP_REPEAT_45(ss) ss(45)
+#define PP_REPEAT_47(ss) PP_REPEAT_46(ss) ss(46)
+#define PP_REPEAT_48(ss) PP_REPEAT_47(ss) ss(47)
+#define PP_REPEAT_49(ss) PP_REPEAT_48(ss) ss(48)
+#define PP_REPEAT_50(ss) PP_REPEAT_49(ss) ss(49)
+#define PP_REPEAT_51(ss) PP_REPEAT_50(ss) ss(50)
+#define PP_REPEAT_52(ss) PP_REPEAT_51(ss) ss(51)
+#define PP_REPEAT_53(ss) PP_REPEAT_52(ss) ss(52)
+#define PP_REPEAT_54(ss) PP_REPEAT_53(ss) ss(53)
+#define PP_REPEAT_55(ss) PP_REPEAT_54(ss) ss(54)
+#define PP_REPEAT_56(ss) PP_REPEAT_55(ss) ss(55)
+#define PP_REPEAT_57(ss) PP_REPEAT_56(ss) ss(56)
+#define PP_REPEAT_58(ss) PP_REPEAT_57(ss) ss(57)
+#define PP_REPEAT_59(ss) PP_REPEAT_58(ss) ss(58)
+#define PP_REPEAT_60(ss) PP_REPEAT_59(ss) ss(59)
+#define PP_REPEAT_61(ss) PP_REPEAT_60(ss) ss(60)
+#define PP_REPEAT_62(ss) PP_REPEAT_61(ss) ss(61)
+#define PP_REPEAT_63(ss) PP_REPEAT_62(ss) ss(62)
+#define PP_REPEAT_64(ss) PP_REPEAT_63(ss) ss(63)
 
 #define PP_REPEAT__(N, X) PP_EXPAND(PP_REPEAT_ ## N)(X)
 #define PP_REPEAT_(N, X) PP_REPEAT__(N, X)

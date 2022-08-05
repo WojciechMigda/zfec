@@ -11,6 +11,8 @@
 #include <assert.h>
 #include <stdint.h>
 
+#define SIMD_ALIGNMENT 16
+
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,
  * and  Lee & Messerschmitt, p. 453.
@@ -57,7 +59,15 @@ modnn(int x) {
  * multiplication is held in a local variable declared with USE_GF_MULC . See
  * usage in _addmul1().
  */
-static gf gf_mul_table[256][256];
+static
+#ifdef _MSC_VER
+__declspec (align (SIMD_ALIGNMENT))
+#endif
+gf gf_mul_table[256][256]
+#ifdef __GNUC__
+__attribute__ ((aligned (SIMD_ALIGNMENT)))
+#endif
+;
 
 #define gf_mul(x,y) gf_mul_table[x][y]
 

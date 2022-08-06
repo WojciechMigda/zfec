@@ -30,5 +30,34 @@ jobs:
             sudo apt-get --yes update
             sudo apt-get --yes install python3-pip
             yes | pip install twisted pyutil
-            yes | pip install --verbose --install-option=--with-arm-neon .[test]
+            yes | pip install --verbose .[test]
             trial zfec
+
+      - name: "Run unit tests on QEMU (cortex-a8) with ZFEC_USE_ARM_NEON"
+        uses: pguyot/arm-runner-action@v2
+        with:
+          base_image: raspios_lite:latest
+          cpu: cortex-a8
+          optimize_image: no
+          commands: |
+            sudo apt-get --yes update
+            sudo apt-get --yes install python3-pip
+            yes | pip install twisted pyutil
+            export CFLAGS="-DZFEC_USE_ARM_NEON" && yes | pip install --verbose .[test]
+            trial zfec
+
+      - name: "Build and run benchmark tool on QEMU (cortex-a8)"
+        uses: pguyot/arm-runner-action@v2
+        with:
+          base_image: raspios_lite:latest
+          cpu: cortex-a8
+          optimize_image: no
+          commands: |
+            make -C bench bench_zfec STRIDE=4096 UNROLL=8
+            bench/bench_zfec -i 1 -r 1
+            bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+            make -C bench clean
+            CFLAGS="-DZFEC_USE_ARM_NEON" make -C bench bench_zfec
+            bench/bench_zfec -i 1 -r 1
+            bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+            make -C bench clean

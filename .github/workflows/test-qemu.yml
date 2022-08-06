@@ -3,7 +3,9 @@ name: "QEMU tests"
 on:
   push:
     branches:
-      - "simd"
+      - "master"
+      - 'main'
+      - 'GH[1-9]+[0-9]*-*'
   pull_request:
 
 jobs:
@@ -17,8 +19,6 @@ jobs:
 
       - name: Check out zfec sources
         uses: actions/checkout@v2
-        with:
-          ref: simd
 
       - name: "Run unit tests on QEMU (cortex-a8)"
         uses: pguyot/arm-runner-action@v2

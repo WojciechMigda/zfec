@@ -11,7 +11,9 @@
 #include <assert.h>
 #include <stdint.h>
 
+#ifndef SIMD_ALIGNMENT
 #define SIMD_ALIGNMENT 16
+#endif
 
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,
@@ -190,6 +192,39 @@ _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t 
 
 
 #if (UNROLL > 1)                /* unrolling by 8/16 is quite effective on the pentium */
+    for (; dst < lim; dst += UNROLL, src += UNROLL) {
+#define OP(i) GF_ADDMULC (dst[i], src[i]);
+        PP_REPEAT(UNROLL, OP)
+#undef OP
+    }
+#endif
+
+
+    lim += UNROLL - 1;
+    for (; dst < lim; dst++, src++)       /* final components */
+        GF_ADDMULC (*dst, *src);
+}
+
+#define addmul_simd(dst, src, c, sz)                 \
+    if (c != 0) _addmul1_simd(dst, src, c, sz)
+
+static void
+_addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
+{
+    /* __builtin_assume_aligned first appeared in GCC 4.7, and clang 3.6 */
+#if (defined __GNUC__ && ((__GNUC__ * 100 + __GNUC_MINOR__) > 407)) || \
+    (defined __clang_major__ && ((__clang_major__ * 100 + __clang_minor__) > 306))
+    dst = __builtin_assume_aligned(dst, SIMD_ALIGNMENT);
+    src = __builtin_assume_aligned(src, SIMD_ALIGNMENT);
+#endif
+
+    USE_GF_MULC;
+    const gf* lim = &dst[sz - UNROLL + 1];
+
+    GF_MULC0 (c);
+
+
+#if (UNROLL > 1)
     for (; dst < lim; dst += UNROLL, src += UNROLL) {
 #define OP(i) GF_ADDMULC (dst[i], src[i]);
         PP_REPEAT(UNROLL, OP)
@@ -490,6 +525,62 @@ fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*res
                 addmul(fecs[i]+k, src[j]+k, p[j], stride);
         }
     }
+}
+
+int fec_encode_simd(
+    fec_t const *code,
+    gf const *restrict const *restrict const inpkts,
+    gf *restrict const *restrict const fecs,
+    unsigned const *restrict const block_nums,
+    size_t const num_block_nums,
+    size_t const sz)
+{
+    size_t ix = 0;
+
+    /* Verify input blocks addresses */
+    for (ix = 0; ix < code->k; ++ix)
+    {
+        if (((uintptr_t)inpkts[ix] % SIMD_ALIGNMENT) != 0)
+        {
+            return EXIT_FAILURE;
+        }
+    }
+
+    /* Verify output blocks addresses */
+    for (ix = 0; ix < num_block_nums; ++ix)
+    {
+        if (((uintptr_t)fecs[block_nums[ix]]) != 0)
+        {
+            return EXIT_FAILURE;
+        }
+    }
+
+    unsigned i = 0;
+    unsigned j = 0;
+    size_t k = 0;
+    unsigned fecnum = 0;
+    gf const *p;
+
+    for (k = 0; k < sz; k += STRIDE)
+    {
+        size_t const stride = ((sz - k) < STRIDE) ? (sz - k) : STRIDE;
+
+        for (i = 0; i < num_block_nums; ++i)
+        {
+            fecnum = block_nums[i];
+            assert (fecnum >= code->k);
+            memset(fecs[i] + k, 0, stride);
+
+            p = &(code->enc_matrix[fecnum * code->k]);
+
+            for (j = 0; j < code->k; ++j)
+            {
+                addmul_simd(fecs[i] + k, inpkts[j] + k, p[j], stride);
+            }
+        }
+    }
+
+    return EXIT_SUCCESS;
 }
 
 /**

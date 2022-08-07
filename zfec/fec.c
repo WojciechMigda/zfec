@@ -442,7 +442,7 @@ init_fec (void) {
 
 void
 fec_free (fec_t *p) {
-    assert (p != NULL && p->magic == (((FEC_MAGIC ^ p->k) ^ p->n) ^ (uintptr_t) (p->enc_matrix)));
+    assert (p != NULL && p->magic == (unsigned long)(((FEC_MAGIC ^ p->k) ^ p->n) ^ (uintptr_t) (p->enc_matrix)));
     free (p->enc_matrix);
     free (p);
 }

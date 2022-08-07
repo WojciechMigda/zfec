@@ -221,7 +221,11 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
     return EXIT_SUCCESS;
 }
 
-gf *random_fill(gf *data_p, size_t sz)
+gf *random_fill(
+    gf *data_p,
+    size_t data_sz,
+    size_t tile_sz,
+    size_t block_sz)
 {
     if (data_p == NULL)
     {
@@ -230,11 +234,19 @@ gf *random_fill(gf *data_p, size_t sz)
 
     srand(time(0));
 
+    /* nblocks may be smaller than k if block_sz < k.
+     * In such case, some blocks at the end will be empty */
+    size_t const nblocks = (data_sz + block_sz - 1) / block_sz;
+    size_t pix = 0;
+    size_t bix = 0;
     size_t ix = 0;
 
-    for (ix = 0; ix < sz; ++ix)
+    for (bix = 0; bix < nblocks; ++bix)
     {
-        data_p[ix] = rand();
+        for (ix = 0; (ix < block_sz) && (pix < data_sz); ++ix, ++pix)
+        {
+            data_p[bix * tile_sz + ix] = rand();
+        }
     }
 
     return data_p;
@@ -254,16 +266,19 @@ gf *pattern_fill(
 
     gf const *str_p = (gf const *)patt_p;
     size_t const str_sz = strlen(patt_p);
-    size_t nblocks = (data_sz + tile_sz - 1) / tile_sz;
+
+    /* nblocks may be smaller than k if block_sz < k.
+     * In such case, some blocks at the end will be empty */
+    size_t const nblocks = (data_sz + block_sz - 1) / block_sz;
     size_t pix = 0;
     size_t bix = 0;
     size_t ix = 0;
 
     for (bix = 0; bix < nblocks; ++bix)
     {
-        for (ix = 0; (ix < block_sz) && (pix < data_sz); ++ix)
+        for (ix = 0; (ix < block_sz) && (pix < data_sz); ++ix, ++pix)
         {
-            data_p[bix * tile_sz + ix] = str_p[pix++ % str_sz];
+            data_p[bix * tile_sz + ix] = str_p[pix % str_sz];
         }
     }
 
@@ -410,8 +425,12 @@ int main(int argc, char **argv)
             checksum_state_t xsum_state = {0};
             uint16_t xsum = 0;
 
+            /* nblocks may be smaller than k if block_sz < k.
+             * In such case, some blocks at the end are empty */
+            size_t const nblocks = (DATA_SZ + fec_sz - 1) / fec_sz;
+
             /* Accumulate checksum block-by-block */
-            for (ix = 0; ix < parsed_args.k; ++ix)
+            for (ix = 0; ix < nblocks; ++ix)
             {
                 size_t const remaining_bytes = DATA_SZ - ix * fec_sz;
 
@@ -428,7 +447,10 @@ int main(int argc, char **argv)
     {
         if (parsed_args.static_pattern == NULL)
         {
-            random_fill(data_p, DATA_SZ);
+            random_fill(data_p,
+            /* data_sz= */ DATA_SZ,
+            /* tile_sz= */ fec_simd_aligned_sz,
+            /* block_sz= */ fec_sz);
         }
 
         double const t0 = now();

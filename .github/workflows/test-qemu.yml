@@ -60,4 +60,5 @@ jobs:
             CFLAGS="-DZFEC_USE_ARM_NEON" make -C bench bench_zfec
             bench/bench_zfec -i 1 -r 1
             bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+            bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
             make -C bench clean

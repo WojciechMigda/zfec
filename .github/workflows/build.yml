@@ -83,6 +83,9 @@ jobs:
         run: |
           make -C bench bench_zfec STRIDE=4096
           bench/bench_zfec -h
+          bench/bench_zfec -i 1 -r 1
+          bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+          bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
         shell: bash
 
       - uses: actions/upload-artifact@v2

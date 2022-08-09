@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <sys/time.h>
 
 
 typedef enum
@@ -324,7 +325,10 @@ uint16_t checksum(uint8_t const *data, size_t len, checksum_state_t *state_p)
 
 double now()
 {
-    return (double)clock() / CLOCKS_PER_SEC;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    return (double)tv.tv_sec + tv.tv_usec / 1.0e6;
 }
 
 int double_cmp(void const *a_p, void const *b_p)

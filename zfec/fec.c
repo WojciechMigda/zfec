@@ -11,6 +11,11 @@
 #include <assert.h>
 #include <stdint.h>
 
+#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3)
+#include <emmintrin.h>
+#include <tmmintrin.h>
+#endif
+
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,
  * and  Lee & Messerschmitt, p. 453.
@@ -67,6 +72,16 @@ __attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
 #endif
 ;
 
+static
+#ifdef _MSC_VER
+__declspec (align (FEC_SIMD_ALIGNMENT))
+#endif
+gf gf_mul_table_16[256][16]
+#ifdef __GNUC__
+__attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
+#endif
+;
+
 #define gf_mul(x,y) gf_mul_table[x][y]
 
 #define USE_GF_MULC register gf * __gf_mulc_
@@ -93,6 +108,10 @@ _init_mul_table(void) {
 
   for (j = 0; j < 256; j++)
       gf_mul_table[0][j] = gf_mul_table[j][0] = 0;
+
+  for (i = 0; i < 256; i++)
+      for (j = 0; j < 16; j++)
+          gf_mul_table_16[i][j] = gf_mul_table[i][j << 4];
 }
 
 #define NEW_GF_MATRIX(rows, cols) \
@@ -201,6 +220,28 @@ _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t 
         GF_ADDMULC (*dst, *src);
 }
 
+#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3)
+/*
+ * Convert 16-bit mask into __v16qu, in which each bit of the
+ * mask [0, 1] is converted into [0, FF] byte.
+ * Author: Peter Cordes, https://stackoverflow.com/a/67203617/2003487
+ */
+static inline
+__m128i mask_to_u128_SSSE3(uint16_t bitmap)
+{
+    __m128i const shuffle = _mm_setr_epi32(0, 0, 0x01010101, 0x01010101);
+    __m128i v = _mm_shuffle_epi8(_mm_cvtsi32_si128(bitmap), shuffle);
+
+    __m128i const bitselect = _mm_setr_epi8(
+        1, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1U << 7,
+        1, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1U << 7);
+    v = _mm_and_si128(v, bitselect);
+    v = _mm_cmpeq_epi8(v, bitselect);
+
+    return v;
+}
+#endif
+
 #define addmul_simd(dst, src, c, sz)                 \
     if (c != 0) _addmul1_simd(dst, src, c, sz)
 
@@ -213,6 +254,44 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
     dst = __builtin_assume_aligned(dst, FEC_SIMD_ALIGNMENT);
     src = __builtin_assume_aligned(src, FEC_SIMD_ALIGNMENT);
 #endif
+
+#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3) && (UNROLL == 16)
+
+    const gf* lim = &dst[sz - UNROLL + 1];
+
+    register __m128i const vmul_lo = _mm_load_si128((__m128i const *)gf_mul_table[c]);
+    register __m128i const vmul_hi = _mm_load_si128((__m128i const *)gf_mul_table_16[c]);
+
+    register __v16qu const mask0F = (__v16qu)_mm_set1_epi8(0x0F);
+
+    for (; dst < lim; dst += UNROLL, src += UNROLL)
+    {
+        register __v16qu const vsrc = (__v16qu)_mm_load_si128((__m128i const *)src);
+        register __v16qu const vsrc_lo = vsrc & mask0F;
+        register __v16qu const vsrc_hi = (__v16qu)((__v8hu)vsrc >> 4) & mask0F;
+
+        register __m128i const to_xor = _mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi);
+
+        _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
+    }
+
+    lim += UNROLL - 1;
+
+    if (dst < lim)
+    {
+        register __v16qu const vsrc = (__v16qu)_mm_load_si128((__m128i const *)src);
+        register __v16qu const vsrc_lo = vsrc & mask0F;
+        register __v16qu const vsrc_hi = (__v16qu)((__v8hu)vsrc >> 4) & mask0F;
+
+        register __m128i const tail_mask = mask_to_u128_SSSE3(0xFFFF >> (16 - (lim - dst)));
+
+        register __m128i const to_xor = (_mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi))
+            & tail_mask;
+
+        _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
+    }
+
+#else /* not ZFEC_USE_INTEL_SSSE3 */
 
     USE_GF_MULC;
     const gf* lim = &dst[sz - UNROLL + 1];
@@ -232,6 +311,7 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
     lim += UNROLL - 1;
     for (; dst < lim; dst++, src++)       /* final components */
         GF_ADDMULC (*dst, *src);
+#endif
 }
 
 /*

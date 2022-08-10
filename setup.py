@@ -19,7 +19,7 @@ undef_macros = []
 for arg in sys.argv:
     if arg.startswith("--stride="):
         stride = int(arg[len("--stride="):])
-        define_macros.append(('ZFEC_STRIDE', stride))
+        define_macros.append(('ZFEX_STRIDE', stride))
         sys.argv.remove(arg)
         break
 
@@ -34,12 +34,12 @@ if DEBUGMODE:
 
 extensions = [
     Extension(
-        "zfec._fec",
+        "zfex._zfex",
         [
-            "zfec/fec.c",
-            "zfec/_fecmodule.c"
+            "zfex/zfex.c",
+            "zfex/_zfexmodule.c"
         ],
-        include_dirs=["zfec/"],
+        include_dirs=["zfex/"],
         extra_link_args=extra_link_args,
         extra_compile_args=extra_compile_args,
         define_macros=define_macros,
@@ -51,11 +51,11 @@ extensions = [
 # because the setuptools-22.0.5 on slackware can't find it there, which breaks
 # packaging. We put "version" here so that Versioneer works correctly.
 setup(
-    name="zfec",
+    name="zfex",
     version=versioneer.get_version(),
-    description="An efficient, portable erasure coding tool",
+    description="A fast, efficient, portable erasure coding tool",
     long_description=open('README.rst', 'r').read(),
-    url="https://github.com/tahoe-lafs/zfec",
+    url="https://github.com/WojciechMigda/zfex",
     extras_require={
         "bench": ["pyutil >= 3.0.0"],
         "test": ["twisted", "pyutil >= 3.0.0"],

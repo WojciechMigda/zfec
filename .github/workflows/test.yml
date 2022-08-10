@@ -27,7 +27,7 @@ jobs:
 
     steps:
 
-      - name: Check out zfec sources
+      - name: Check out zfex sources
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -38,4 +38,4 @@ jobs:
       - name: "Run unit tests"
         run: |
           pip install .[test]
-          trial zfec
+          trial zfex

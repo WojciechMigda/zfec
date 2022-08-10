@@ -1,12 +1,12 @@
-#ifndef __ZFEC_PP_H
-#define __ZFEC_PP_H
+#ifndef __ZFEX_PP_H
+#define __ZFEX_PP_H
 
 /**
- * zfec-fast -- fast forward error correction library with Python interface
+ * zfex -- fast forward error correction library with Python interface
  *
  * Copyright (C) 2022 Wojciech Migda
  *
- * This file is part of zfec-fast.
+ * This file is part of zfex.
  *
  * See README.rst for licensing information.
  */
@@ -89,4 +89,4 @@
 #define PP_REPEAT(N, X) PP_REPEAT_(PP_EXPAND(N), X)
 
 
-#endif /* __ZFEC_PP_H */
+#endif /* __ZFEX_PP_H */

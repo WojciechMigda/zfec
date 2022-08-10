@@ -1,4 +1,4 @@
-from zfec import easyfec, Encoder, filefec
+from zfex import easyfec, Encoder, filefec
 from pyutil import mathutil
 
 import os, sys

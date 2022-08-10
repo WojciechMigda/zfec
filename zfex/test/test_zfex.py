@@ -14,7 +14,7 @@ import unittest
 global VERBOSE
 VERBOSE=False
 
-import zfec
+import zfex
 
 from pyutil import fileutil
 
@@ -33,14 +33,14 @@ def randstr(n):
     return os.urandom(n)
 
 def _h(k, m, ss):
-    encer = zfec.Encoder(k, m)
+    encer = zfex.Encoder(k, m)
     nums_and_blocks = list(enumerate(encer.encode(ss)))
     assert isinstance(nums_and_blocks, list), nums_and_blocks
     assert len(nums_and_blocks) == m, (len(nums_and_blocks), m,)
     nums_and_blocks = random.sample(nums_and_blocks, k)
     blocks = [ x[1] for x in nums_and_blocks ]
     nums = [ x[0] for x in nums_and_blocks ]
-    decer = zfec.Decoder(k, m)
+    decer = zfex.Decoder(k, m)
     decoded = decer.decode(blocks, nums)
     assert len(decoded) == len(ss), (len(decoded), len(ss),)
     assert tuple([str(s) for s in decoded]) == tuple([str(s) for s in ss]), (tuple([ab(str(s)) for s in decoded]), tuple([ab(str(s)) for s in ss]),)
@@ -59,14 +59,14 @@ def _help_test_random_with_l(l):
     _h(k, m, ss)
 
 def _h_easy(k, m, s):
-    encer = zfec.easyfec.Encoder(k, m)
+    encer = zfex.easyfec.Encoder(k, m)
     nums_and_blocks = list(enumerate(encer.encode(s)))
     assert isinstance(nums_and_blocks, list), nums_and_blocks
     assert len(nums_and_blocks) == m, (len(nums_and_blocks), m,)
     nums_and_blocks = random.sample(nums_and_blocks, k)
     blocks = [ x[1] for x in nums_and_blocks ]
     nums = [ x[0] for x in nums_and_blocks ]
-    decer = zfec.easyfec.Decoder(k, m)
+    decer = zfex.easyfec.Decoder(k, m)
 
     decodeds = decer.decode(blocks, nums, padlen=k*len(blocks[0]) - len(s))
     assert len(decodeds) == len(s), (ab(decodeds), ab(s), k, m)
@@ -85,10 +85,10 @@ def _help_test_random_with_l_easy(l):
     s = randstr(l)
     _h_easy(k, m, s)
 
-class ZFecTest(unittest.TestCase):
+class ZFexTest(unittest.TestCase):
     def test_instantiate_encoder_no_args(self):
         try:
-            e = zfec.Encoder()
+            e = zfex.Encoder()
             del e
         except TypeError:
             # Okay, so that's because we're required to pass constructor args.
@@ -99,7 +99,7 @@ class ZFecTest(unittest.TestCase):
 
     def test_instantiate_decoder_no_args(self):
         try:
-            e = zfec.Decoder()
+            e = zfex.Decoder()
             del e
         except TypeError:
             # Okay, so that's because we're required to pass constructor args.
@@ -109,10 +109,10 @@ class ZFecTest(unittest.TestCase):
             self.fail("Should have raised exception from incorrect arguments to constructor.")
 
     def test_from_agl_c(self):
-        self.assertTrue(zfec._fec.test_from_agl())
+        self.assertTrue(zfex._zfex.test_from_agl())
 
     def test_from_agl_py(self):
-        e = zfec.Encoder(3, 5)
+        e = zfex.Encoder(3, 5)
         b0 = b'\x01'*8 ; b1 = b'\x02'*8 ; b2 = b'\x03'*8
         # print "_from_py before encoding:"
         # print "b0: %s, b1: %s, b2: %s" % tuple(base64.b16encode(x) for x in [b0, b1, b2])
@@ -121,7 +121,7 @@ class ZFecTest(unittest.TestCase):
         # print "after encoding:"
         # print "b3: %s, b4: %s" % tuple(base64.b16encode(x) for x in [b3, b4])
 
-        d = zfec.Decoder(3, 5)
+        d = zfex.Decoder(3, 5)
         r0, r1, r2 = d.decode((b2, b3, b4), (1, 2, 3))
 
         # print "after decoding:"
@@ -141,43 +141,43 @@ class ZFecTest(unittest.TestCase):
 
     def test_bad_args_construct_decoder(self):
         try:
-            zfec.Decoder(-1, -1)
-        except zfec.Error as e:
+            zfex.Decoder(-1, -1)
+        except zfex.Error as e:
             assert "argument is required to be greater than or equal to 1" in str(e), e
         else:
             self.fail("Should have gotten an exception from out-of-range arguments.")
 
         try:
-            zfec.Decoder(1, 257)
-        except zfec.Error as e:
+            zfex.Decoder(1, 257)
+        except zfex.Error as e:
             assert "argument is required to be less than or equal to 256" in str(e), e
         else:
             self.fail("Should have gotten an exception from out-of-range arguments.")
 
         try:
-            zfec.Decoder(3, 2)
-        except zfec.Error as e:
+            zfex.Decoder(3, 2)
+        except zfex.Error as e:
             assert "first argument is required to be less than or equal to the second argument" in str(e), e
         else:
             self.fail("Should have gotten an exception from out-of-range arguments.")
 
     def test_bad_args_construct_encoder(self):
         try:
-            zfec.Encoder(-1, -1)
-        except zfec.Error as e:
+            zfex.Encoder(-1, -1)
+        except zfex.Error as e:
             assert "argument is required to be greater than or equal to 1" in str(e), e
         else:
             self.fail("Should have gotten an exception from out-of-range arguments.")
 
         try:
-            zfec.Encoder(1, 257)
-        except zfec.Error as e:
+            zfex.Encoder(1, 257)
+        except zfex.Error as e:
             assert "argument is required to be less than or equal to 256" in str(e), e
         else:
             self.fail("Should have gotten an exception from out-of-range arguments.")
 
     def test_bad_args_dec(self):
-        decer = zfec.Decoder(2, 4)
+        decer = zfex.Decoder(2, 4)
 
         try:
             decer.decode(98, []) # first argument is not a sequence
@@ -188,10 +188,10 @@ class ZFecTest(unittest.TestCase):
 
         try:
             decer.decode(["a", "b", ], ["c", "d",])
-        except zfec.Error as e:
+        except zfex.Error as e:
             assert "Precondition violation: second argument is required to contain int" in str(e), e
         else:
-            self.fail("Should have gotten zfec.Error for wrong type of second argument.")
+            self.fail("Should have gotten zfex.Error for wrong type of second argument.")
 
         try:
             decer.decode(["a", "b", ], 98) # not a sequence at all
@@ -214,7 +214,7 @@ class EasyFecTest(unittest.TestCase):
             print("%d randomized tests pass." % (i+1))
 
     def test_bad_args_dec(self):
-        decer = zfec.easyfec.Decoder(2, 4)
+        decer = zfex.easyfec.Decoder(2, 4)
 
         try:
             decer.decode(98, [0, 1], 0) # first argument is not a sequence
@@ -225,10 +225,10 @@ class EasyFecTest(unittest.TestCase):
 
         try:
             decer.decode("ab", ["c", "d",], 0)
-        except zfec.Error as e:
+        except zfex.Error as e:
             assert "Precondition violation: second argument is required to contain int" in str(e), e
         else:
-            self.fail("Should have gotten zfec.Error for wrong type of second argument.")
+            self.fail("Should have gotten zfex.Error for wrong type of second argument.")
 
         try:
             decer.decode("ab", 98, 0) # not a sequence at all
@@ -249,9 +249,9 @@ class FileFec(unittest.TestCase):
                     for sh in [0, 1, m-1,]:
                         if sh >= m:
                             continue
-                        h = zfec.filefec._build_header(m, k, pad, sh)
+                        h = zfex.filefec._build_header(m, k, pad, sh)
                         hio = BytesIO(h)
-                        (rm, rk, rpad, rsh,) = zfec.filefec._parse_header(hio)
+                        (rm, rk, rpad, rsh,) = zfex.filefec._parse_header(hio)
                         assert (rm, rk, rpad, rsh,) == (m, k, pad, sh,), h
 
     def _help_test_filefec(self, teststr, k, m, numshs=None):
@@ -272,10 +272,10 @@ class FileFec(unittest.TestCase):
             tempf.seek(0)
 
             # encode the file
-            zfec.filefec.encode_to_files(tempf, fsize, tempdir.name, PREFIX, k, m, SUFFIX, verbose=VERBOSE)
+            zfex.filefec.encode_to_files(tempf, fsize, tempdir.name, PREFIX, k, m, SUFFIX, verbose=VERBOSE)
 
             # select some share files
-            RE=re.compile(zfec.filefec.RE_FORMAT % (PREFIX, SUFFIX,))
+            RE=re.compile(zfex.filefec.RE_FORMAT % (PREFIX, SUFFIX,))
             fns = os.listdir(tempdir.name)
             assert len(fns) >= m, (fns, tempdir, tempdir.name,)
             sharefs = [ open(os.path.join(tempdir.name, fn), "rb") for fn in fns if RE.match(fn) ]
@@ -286,7 +286,7 @@ class FileFec(unittest.TestCase):
 
             # decode from the share files
             outf = tempdir.file('recovered-testfile.txt', 'w+b')
-            zfec.filefec.decode_from_files(outf, sharefs, verbose=VERBOSE)
+            zfex.filefec.decode_from_files(outf, sharefs, verbose=VERBOSE)
             outf.flush()
             outf.seek(0)
             recovereddata = outf.read()
@@ -342,15 +342,15 @@ class Cmdline(unittest.TestCase):
 
         self.DEFAULT_M = 8
         self.DEFAULT_K = 3
-        self.RE = re.compile(zfec.filefec.RE_FORMAT % ('test.data', ".fec",))
+        self.RE = re.compile(zfex.filefec.RE_FORMAT % ('test.data', ".fec",))
 
     def tearDown(self):
         sys.argv = self.realargv
 
     def test_basic(self, noisy=VERBOSE):
-        sys.argv = ["zfec", os.path.join(self.tempdir.name, "test.data"),]
+        sys.argv = ["zfex", os.path.join(self.tempdir.name, "test.data"),]
 
-        retcode = zfec.cmdline_zfec.main()
+        retcode = zfex.cmdline_zfex.main()
         assert retcode == 0, retcode
 
         fns = os.listdir(self.tempdir.name)
@@ -359,11 +359,11 @@ class Cmdline(unittest.TestCase):
         random.shuffle(sharefns)
         del sharefns[self.DEFAULT_K:]
 
-        sys.argv = ["zunfec",]
+        sys.argv = ["zunfex",]
         sys.argv.extend(sharefns)
         sys.argv.extend(['-o', os.path.join(self.tempdir.name, 'test.data-recovered'),])
 
-        retcode = zfec.cmdline_zunfec.main()
+        retcode = zfex.cmdline_zunfex.main()
         assert retcode == 0, retcode
         import filecmp
         assert filecmp.cmp(os.path.join(self.tempdir.name, 'test.data'),
@@ -372,8 +372,8 @@ class Cmdline(unittest.TestCase):
 
     def test_stdin(self, noisy=VERBOSE):
         sys.stdin = open(os.path.join(self.tempdir.name, "test.data"))
-        sys.argv = ["zfec", "-"]
-        retcode = zfec.cmdline_zfec.main()
+        sys.argv = ["zfex", "-"]
+        retcode = zfex.cmdline_zfex.main()
 
         fns = os.listdir(self.tempdir.name)
         assert len(fns) >= self.DEFAULT_M, (fns, self.DEFAULT_M, self.tempdir, self.tempdir.name,)
@@ -381,11 +381,11 @@ class Cmdline(unittest.TestCase):
         random.shuffle(sharefns)
         del sharefns[self.DEFAULT_K:]
 
-        sys.argv = ["zunfec",]
+        sys.argv = ["zunfex",]
         sys.argv.extend(sharefns)
         sys.argv.extend(['-o', os.path.join(self.tempdir.name, 'test.data-recovered'),])
 
-        retcode = zfec.cmdline_zunfec.main()
+        retcode = zfex.cmdline_zunfex.main()
         assert retcode == 0, retcode
         import filecmp
         assert filecmp.cmp(os.path.join(self.tempdir.name, 'test.data'),

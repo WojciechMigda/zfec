@@ -2,8 +2,8 @@ from __future__ import print_function
 import array, os, struct
 from base64 import b32encode
 
-import zfec
-from zfec import easyfec
+import zfex
+from zfex import easyfec
 
 CHUNKSIZE = 4096
 
@@ -40,9 +40,9 @@ def ab(x): # debuggery
     elif len(x) == 0:
         return "%s:%s" % (len(x), "--empty--",)
 
-class InsufficientShareFilesError(zfec.Error):
+class InsufficientShareFilesError(zfex.Error):
     def __init__(self, k, kb, *args, **kwargs):
-        zfec.Error.__init__(self, *args, **kwargs)
+        zfex.Error.__init__(self, *args, **kwargs)
         self.k = k
         self.kb = kb
 
@@ -52,7 +52,7 @@ class InsufficientShareFilesError(zfec.Error):
     def __str__(self):
         return self.__repr__()
 
-class CorruptedShareFilesError(zfec.Error):
+class CorruptedShareFilesError(zfex.Error):
     pass
 
 def _build_header(m, k, pad, sh):
@@ -344,7 +344,7 @@ def encode_file(inf, cb, k, m, chunksize=4096):
     @param chunksize how much data to read from inf for each of the k input
         blocks
     """
-    enc = zfec.Encoder(k, m)
+    enc = zfex.Encoder(k, m)
     l = tuple([ array.array('c') for i in range(k) ])
     indatasize = k*chunksize # will be reset to shorter upon EOF
     eof = False
@@ -383,7 +383,7 @@ except ImportError:
     sha1 = sha
 
 def encode_file_not_really(inf, cb, k, m, chunksize=4096):
-    enc = zfec.Encoder(k, m)
+    enc = zfex.Encoder(k, m)
     l = tuple([ array.array('c') for i in range(k) ])
     indatasize = k*chunksize # will be reset to shorter upon EOF
     eof = False
@@ -415,7 +415,7 @@ def encode_file_not_really(inf, cb, k, m, chunksize=4096):
 
 def encode_file_not_really_and_hash(inf, cb, k, m, chunksize=4096):
     hasher = sha1.new()
-    enc = zfec.Encoder(k, m)
+    enc = zfex.Encoder(k, m)
     l = tuple([ array.array('c') for i in range(k) ])
     indatasize = k*chunksize # will be reset to shorter upon EOF
     eof = False
@@ -468,7 +468,7 @@ def encode_file_stringy(inf, cb, k, m, chunksize=4096):
     @param chunksize how much data to read from inf for each of the k input
         blocks
     """
-    enc = zfec.Encoder(k, m)
+    enc = zfex.Encoder(k, m)
     indatasize = k*chunksize # will be reset to shorter upon EOF
     while indatasize == k*chunksize:
         # This loop body executes once per segment.
@@ -521,11 +521,11 @@ def encode_file_stringy_easyfec(inf, cb, k, m, chunksize=4096):
         cb(res, len(indata))
         indata = inf.read(readsize)
 
-# zfec -- fast forward error correction library with Python interface
+# zfex -- fast forward error correction library with Python interface
 #
 # Copyright (C) 2007-2010 Allmydata, Inc.
 # Author: Zooko Wilcox-O'Hearn
 #
-# This file is part of zfec.
+# This file is part of zfex.
 #
 # See README.rst for licensing information.

@@ -18,11 +18,11 @@ R=re.compile("ave rate: ([1-9][0-9]*)")
 def measure(stride):
     fileutil.rm_dir("build")
     fileutil.rm_dir("instdir")
-    fileutil.remove_if_possible(os.path.join("zfec", "_fec.so"))
+    fileutil.remove_if_possible(os.path.join("zfex", "_zfex.so"))
     fileutil.make_dirs("instdir")
     fname = os.path.join("benchresults", "comp_0-stride_%d"%stride)
     os.system("PYTHONPATH=instdir ./setup.py develop --install-dir=instdir --stride=%d >/dev/null" % stride)
-    os.system("PYTHONPATH=instdir python -OO ./bench/bench_zfec.py >> %s" % fname)
+    os.system("PYTHONPATH=instdir python -OO ./bench/bench_zfex.py >> %s" % fname)
     inf = open(fname, "rU")
     for l in inf:
         m = R.search(l)

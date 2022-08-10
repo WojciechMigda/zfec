@@ -1,7 +1,7 @@
-# zfec -- a fast C implementation of Reed-Solomon erasure coding with
+# zfex -- a fast C implementation of Reed-Solomon erasure coding with
 # command-line, C, and Python interfaces
 
-import zfec
+import zfex
 
 # div_ceil() was copied from the pyutil library.
 def div_ceil(n, d):
@@ -23,7 +23,7 @@ def ab(x): # debuggery
 
 class Encoder(object):
     def __init__(self, k, m):
-        self.fec = zfec.Encoder(k, m)
+        self.fec = zfex.Encoder(k, m)
 
     def encode(self, data):
         """
@@ -40,7 +40,7 @@ class Encoder(object):
         
 class Decoder(object):
     def __init__(self, k, m):
-        self.fec = zfec.Decoder(k, m)
+        self.fec = zfex.Decoder(k, m)
 
     def decode(self, blocks, sharenums, padlen):
         """
@@ -54,11 +54,11 @@ class Decoder(object):
         else:
             return data
 
-# zfec -- fast forward error correction library with Python interface
+# zfex -- fast forward error correction library with Python interface
 # 
 # Copyright (C) 2007 Allmydata, Inc.
 # Author: Zooko Wilcox-O'Hearn
 # 
-# This file is part of zfec.
+# This file is part of zfex.
 # 
 # See README.rst for licensing information.

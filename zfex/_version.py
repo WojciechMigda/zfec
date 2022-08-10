@@ -41,9 +41,9 @@ def get_config():
     cfg = VersioneerConfig()
     cfg.VCS = "git"
     cfg.style = "pep440"
-    cfg.tag_prefix = "zfec-"
-    cfg.parentdir_prefix = "zfec-"
-    cfg.versionfile_source = "zfec/_version.py"
+    cfg.tag_prefix = "zfex-"
+    cfg.parentdir_prefix = "zfex-"
+    cfg.versionfile_source = "zfex/_version.py"
     cfg.verbose = False
     return cfg
 

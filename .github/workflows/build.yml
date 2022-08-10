@@ -13,7 +13,7 @@ on:
       # Do build on pushes to any release tag See
       # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
       # for documentation about how patterns are matched.
-      - "zfec-*"
+      - "zfex-*"
 
   # Do build on pushes to any branch with an open pull request.
   pull_request:
@@ -24,8 +24,8 @@ on:
     types: [published, created, edited]
 
 env:
-  # Just make sure that Python can use zfec package
-  CIBW_TEST_COMMAND: python -c "import zfec; print(zfec.__version__)"
+  # Just make sure that Python can use zfex package
+  CIBW_TEST_COMMAND: python -c "import zfex; print(zfex.__version__)"
 
 jobs:
   build_wheels:
@@ -47,7 +47,7 @@ jobs:
           - "pp38-*"
 
     steps:
-      - name: Check out zfec sources
+      - name: Check out zfex sources
         uses: actions/checkout@v2
         with:
           # Check out the full history, including tags.  This is necessary to
@@ -81,25 +81,25 @@ jobs:
 
       - name: "Build benchmark tool"
         run: |
-          export CFLAGS="-O3" && make -C bench bench_zfec STRIDE=4096 UNROLL=8
+          export CFLAGS="-O3" && make -C bench bench_zfex STRIDE=4096 UNROLL=8
           echo "::group::Show help"
-          bench/bench_zfec -h
+          bench/bench_zfex -h
           echo "::endgroup::"
           make -C bench clean
-          export CFLAGS="-O3" && make -C bench bench_zfec STRIDE=8192 UNROLL=16
+          export CFLAGS="-O3" && make -C bench bench_zfex STRIDE=8192 UNROLL=16
           echo "::group::Run default benchmark"
-          bench/bench_zfec -i 1 -r 1
+          bench/bench_zfex -i 1 -r 1
           echo "::endgroup::"
           echo "::group::Run custom benchmark and show checksums"
-          bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+          bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
           echo "::endgroup::"
           echo "::group::Run custom aligned benchmark and show checksums"
-          bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
+          bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
           echo "::endgroup::"
           make -C bench clean
-          export CFLAGS="-DZFEC_USE_INTEL_SSSE3 -mssse3 -O3" && make -C bench bench_zfec STRIDE=8192 UNROLL=16
+          export CFLAGS="-DZFEX_USE_INTEL_SSSE3 -mssse3 -O3" && make -C bench bench_zfex STRIDE=8192 UNROLL=16
           echo "::group::Run custom SSSE3 benchmark and show checksums"
-          bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
+          bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
           echo "::endgroup::"
         shell: bash
 
@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-        name: Check out zfec sources
+        name: Check out zfex sources
         with:
           # Check out the full history, including tags.  This is necessary to
           # construct non-release version numbers.

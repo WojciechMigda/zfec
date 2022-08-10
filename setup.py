@@ -19,7 +19,7 @@ undef_macros = []
 for arg in sys.argv:
     if arg.startswith("--stride="):
         stride = int(arg[len("--stride="):])
-        define_macros.append(('STRIDE', stride))
+        define_macros.append(('ZFEC_STRIDE', stride))
         sys.argv.remove(arg)
         break
 

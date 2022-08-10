@@ -60,4 +60,10 @@
 #define ZFEC_ASSUME_ALIGNED(what, align) (what)
 #endif
 
+
+#ifndef ZFEC_STRIDE
+#define ZFEC_STRIDE 8192
+#endif
+
+
 #endif /* __ZFEC_MACROS_H */

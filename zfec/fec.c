@@ -622,11 +622,6 @@ fec_new(unsigned short k, unsigned short n) {
     return retval;
 }
 
-/* To make sure that we stay within cache in the inner loops of fec_encode().  (It would
-   probably help to also do this for fec_decode(). */
-#ifndef STRIDE
-#define STRIDE 8192
-#endif
 
 void
 fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*restrict const*restrict const fecs, const unsigned*restrict const block_nums, size_t num_block_nums, size_t sz) {
@@ -635,15 +630,20 @@ fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*res
     unsigned fecnum;
     const gf* p;
 
-    for (k = 0; k < sz; k += STRIDE) {
-        size_t stride = ((sz-k) < STRIDE)?(sz-k):STRIDE;
-        for (i=0; i<num_block_nums; i++) {
-            fecnum=block_nums[i];
-            assert (fecnum >= code->k);
-            memset(fecs[i]+k, 0, stride);
+    for (k = 0; k < sz; k += ZFEC_STRIDE)
+    {
+        size_t stride = ((sz - k) < ZFEC_STRIDE) ? (sz - k) : ZFEC_STRIDE;
+
+        for (i = 0; i < num_block_nums; ++i)
+        {
+            fecnum = block_nums[i];
+            assert(fecnum >= code->k);
+            memset(fecs[i] + k, 0, stride);
             p = &(code->enc_matrix[fecnum * code->k]);
-            for (j = 0; j < code->k; j++)
-                addmul(fecs[i]+k, src[j]+k, p[j], stride);
+            for (j = 0; j < code->k; ++j)
+            {
+                addmul(fecs[i] + k, src[j] + k, p[j], stride);
+            }
         }
     }
 }
@@ -682,9 +682,9 @@ int fec_encode_simd(
     unsigned fecnum = 0;
     gf const *p;
 
-    for (k = 0; k < sz; k += STRIDE)
+    for (k = 0; k < sz; k += ZFEC_STRIDE)
     {
-        size_t const stride = ((sz - k) < STRIDE) ? (sz - k) : STRIDE;
+        size_t const stride = ((sz - k) < ZFEC_STRIDE) ? (sz - k) : ZFEC_STRIDE;
 
         for (i = 0; i < num_block_nums; ++i)
         {

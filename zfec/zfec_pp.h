@@ -1,5 +1,15 @@
-#ifndef __FEC_PP_H
-#define __FEC_PP_H
+#ifndef __ZFEC_PP_H
+#define __ZFEC_PP_H
+
+/**
+ * zfec-fast -- fast forward error correction library with Python interface
+ *
+ * Copyright (C) 2022 Wojciech Migda
+ *
+ * This file is part of zfec-fast.
+ *
+ * See README.rst for licensing information.
+ */
 
 #define PP_EXPAND(...) __VA_ARGS__
 
@@ -78,61 +88,5 @@
 #define PP_REPEAT_(N, X) PP_REPEAT__(N, X)
 #define PP_REPEAT(N, X) PP_REPEAT_(PP_EXPAND(N), X)
 
-/**
- * zfec -- fast forward error correction library with Python interface
- * 
- * Copyright (C) 2007-2008 Allmydata, Inc.
- * Author: Zooko Wilcox-O'Hearn
- * 
- * This file is part of zfec.
- * 
- * See README.rst for licensing information.
- *
- * Modifications by Wojciech Migda (see commits in
- * github.com/WojciechMigda/zfec repository for their scope).
- * Modifications (C) 2022 Wojciech Migda (github.com/WojciechMigda)
- */
 
-/*
- * Much of this work is derived from the "fec" software by Luigi Rizzo, et 
- * al., the copyright notice and licence terms of which are included below 
- * for reference.
- * 
- * fec.h -- forward error correction based on Vandermonde matrices
- * 980614
- * (C) 1997-98 Luigi Rizzo (luigi@iet.unipi.it)
- *
- * Portions derived from code by Phil Karn (karn@ka9q.ampr.org),
- * Robert Morelos-Zaragoza (robert@spectra.eng.hawaii.edu) and Hari
- * Thirumoorthy (harit@spectra.eng.hawaii.edu), Aug 1995
- *
- * Modifications by Dan Rubenstein (see Modifications.txt for 
- * their description.
- * Modifications (C) 1998 Dan Rubenstein (drubenst@cs.umass.edu)
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
-
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
- * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
- */
-
-#endif /* __FEC_PP_H */
+#endif /* __ZFEC_PP_H */

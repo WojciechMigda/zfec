@@ -1,9 +1,10 @@
 /**
- * zfec -- fast forward error correction library with Python interface
+ * zfec-fast -- fast forward error correction library with Python interface
  */
 
 #include "fec.h"
-#include "fec_pp.h"
+#include "zfec_pp.h"
+#include "zfec_macros.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,10 +12,10 @@
 #include <assert.h>
 #include <stdint.h>
 
-#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3)
+#if (ZFEC_INTEL_SSSE3_FEATURE == 1)
 #include <emmintrin.h>
 #include <tmmintrin.h>
-#endif
+#endif /* ZFEC_INTEL_SSSE3_FEATURE == 1 */
 
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,
@@ -64,21 +65,21 @@ modnn(int x) {
  */
 static
 #ifdef _MSC_VER
-__declspec (align (FEC_SIMD_ALIGNMENT))
+__declspec (align (ZFEC_SIMD_ALIGNMENT))
 #endif
 gf gf_mul_table[256][256]
 #ifdef __GNUC__
-__attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
+__attribute__ ((aligned (ZFEC_SIMD_ALIGNMENT)))
 #endif
 ;
 
 static
 #ifdef _MSC_VER
-__declspec (align (FEC_SIMD_ALIGNMENT))
+__declspec (align (ZFEC_SIMD_ALIGNMENT))
 #endif
 gf gf_mul_table_16[256][16]
 #ifdef __GNUC__
-__attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
+__attribute__ ((aligned (ZFEC_SIMD_ALIGNMENT)))
 #endif
 ;
 
@@ -198,8 +199,11 @@ generate_gf (void) {
 #ifndef UNROLL
 #define UNROLL 16               /* 1, 4, 8, 16 */
 #endif
-static void
-_addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz) {
+static
+#if (ZFEC_INLINE_ADDMUL_FEATURE == 1)
+inline
+#endif /* ZFEC_INLINE_ADDMUL_FEATURE */
+void _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz) {
     USE_GF_MULC;
     const gf* lim = &dst[sz - UNROLL + 1];
 
@@ -220,7 +224,7 @@ _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t 
         GF_ADDMULC (*dst, *src);
 }
 
-#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3)
+#if (ZFEC_INTEL_SSSE3_FEATURE == 1)
 /*
  * Convert 16-bit mask into __v16qu, in which each bit of the
  * mask [0, 1] is converted into [0, FF] byte.
@@ -240,22 +244,21 @@ __m128i mask_to_u128_SSSE3(uint16_t bitmap)
 
     return v;
 }
-#endif
+#endif /* ZFEC_INTEL_SSSE3_FEATURE == 1 */
 
 #define addmul_simd(dst, src, c, sz)                 \
     if (c != 0) _addmul1_simd(dst, src, c, sz)
 
-static void
-_addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
+static
+#if (ZFEC_INLINE_ADDMUL_SIMD_FEATURE == 1)
+inline
+#endif /* ZFEC_INLINE_ADDMUL_SIMD_FEATURE */
+void _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
 {
-    /* __builtin_assume_aligned first appeared in GCC 4.7, and clang 3.6 */
-#if (defined __GNUC__ && ((__GNUC__ * 100 + __GNUC_MINOR__) > 407)) || \
-    (defined __clang_major__ && ((__clang_major__ * 100 + __clang_minor__) > 306))
-    dst = __builtin_assume_aligned(dst, FEC_SIMD_ALIGNMENT);
-    src = __builtin_assume_aligned(src, FEC_SIMD_ALIGNMENT);
-#endif
+    dst = ZFEC_ASSUME_ALIGNED(dst, ZFEC_SIMD_ALIGNMENT);
+    src = ZFEC_ASSUME_ALIGNED(src, ZFEC_SIMD_ALIGNMENT);
 
-#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3) && (UNROLL == 16)
+#if (ZFEC_INTEL_SSSE3_FEATURE == 1) && (UNROLL == 16)
 
     const gf* lim = &dst[sz - UNROLL + 1];
 
@@ -291,7 +294,7 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
         _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
     }
 
-#elif ((defined __arm__) || (defined __arm) || (defined _ARM) || (defined _M_ARM)) && (defined __ARM_NEON__) && (defined ZFEC_USE_ARM_NEON) && (UNROLL == 16)
+#elif (ZFEC_ARM_NEON_FEATURE == 1) && (UNROLL == 16)
     // Idea from https://botan.randombit.net zfec_vperm.cpp
 
     USE_GF_MULC;
@@ -340,7 +343,7 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
     for (; dst < lim; dst++, src++)       /* final components */
         GF_ADDMULC (*dst, *src);
 
-#else /* not ZFEC_USE_INTEL_SSSE3 && not ZFEC_USE_ARM_NEON */
+#else /* not ZFEC_INTEL_SSSE3_FEATURE && not ZFEC_ARM_NEON_FEATURE */
 
     USE_GF_MULC;
     const gf* lim = &dst[sz - UNROLL + 1];
@@ -625,11 +628,6 @@ fec_new(unsigned short k, unsigned short n) {
     return retval;
 }
 
-/* To make sure that we stay within cache in the inner loops of fec_encode().  (It would
-   probably help to also do this for fec_decode(). */
-#ifndef STRIDE
-#define STRIDE 8192
-#endif
 
 void
 fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*restrict const*restrict const fecs, const unsigned*restrict const block_nums, size_t num_block_nums, size_t sz) {
@@ -638,15 +636,20 @@ fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*res
     unsigned fecnum;
     const gf* p;
 
-    for (k = 0; k < sz; k += STRIDE) {
-        size_t stride = ((sz-k) < STRIDE)?(sz-k):STRIDE;
-        for (i=0; i<num_block_nums; i++) {
-            fecnum=block_nums[i];
-            assert (fecnum >= code->k);
-            memset(fecs[i]+k, 0, stride);
+    for (k = 0; k < sz; k += ZFEC_STRIDE)
+    {
+        size_t stride = ((sz - k) < ZFEC_STRIDE) ? (sz - k) : ZFEC_STRIDE;
+
+        for (i = 0; i < num_block_nums; ++i)
+        {
+            fecnum = block_nums[i];
+            assert(fecnum >= code->k);
+            memset(fecs[i] + k, 0, stride);
             p = &(code->enc_matrix[fecnum * code->k]);
-            for (j = 0; j < code->k; j++)
-                addmul(fecs[i]+k, src[j]+k, p[j], stride);
+            for (j = 0; j < code->k; ++j)
+            {
+                addmul(fecs[i] + k, src[j] + k, p[j], stride);
+            }
         }
     }
 }
@@ -664,7 +667,7 @@ int fec_encode_simd(
     /* Verify input blocks addresses */
     for (ix = 0; ix < code->k; ++ix)
     {
-        if (((uintptr_t)inpkts[ix] % FEC_SIMD_ALIGNMENT) != 0)
+        if (((uintptr_t)inpkts[ix] % ZFEC_SIMD_ALIGNMENT) != 0)
         {
             return EXIT_FAILURE;
         }
@@ -673,7 +676,7 @@ int fec_encode_simd(
     /* Verify output blocks addresses */
     for (ix = 0; ix < num_block_nums; ++ix)
     {
-        if (((uintptr_t)fecs[ix] % FEC_SIMD_ALIGNMENT) != 0)
+        if (((uintptr_t)fecs[ix] % ZFEC_SIMD_ALIGNMENT) != 0)
         {
             return EXIT_FAILURE;
         }
@@ -685,9 +688,9 @@ int fec_encode_simd(
     unsigned fecnum = 0;
     gf const *p;
 
-    for (k = 0; k < sz; k += STRIDE)
+    for (k = 0; k < sz; k += ZFEC_STRIDE)
     {
-        size_t const stride = ((sz - k) < STRIDE) ? (sz - k) : STRIDE;
+        size_t const stride = ((sz - k) < ZFEC_STRIDE) ? (sz - k) : ZFEC_STRIDE;
 
         for (i = 0; i < num_block_nums; ++i)
         {
@@ -747,12 +750,13 @@ fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*
 }
 
 /**
- * zfec -- fast forward error correction library with Python interface
+ * zfec-fast -- fast forward error correction library with Python interface
  *
  * Copyright (C) 2007-2010 Zooko Wilcox-O'Hearn
  * Author: Zooko Wilcox-O'Hearn
+ * Copyright (C) 2022 Wojciech Migda
  *
- * This file is part of zfec.
+ * This file is part of zfec-fast.
  *
  * See README.rst for licensing information.
  *

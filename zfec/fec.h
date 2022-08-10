@@ -2,16 +2,12 @@
 #define __FEC_H
 
 /**
- * zfec -- fast forward error correction library with Python interface
+ * zfec-fast -- fast forward error correction library with Python interface
  *
  * See README.rst for documentation.
  */
 
 #include <stddef.h>
-
-#ifndef FEC_SIMD_ALIGNMENT
-#define FEC_SIMD_ALIGNMENT 16
-#endif
 
 
 typedef unsigned char gf;
@@ -45,8 +41,8 @@ void fec_free(fec_t* p);
 void fec_encode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*restrict const*restrict const fecs, const unsigned*restrict const block_nums, size_t num_block_nums, size_t sz);
 
 /**
- * @param inpkts the "primary blocks" i.e. the chunks of the input data, all chunks must begin at an address aligned to FEC_SIMD_ALIGNMENT
- * @param fecs buffers into which the secondary blocks will be written, all blocks indicated through block_nums must begin at an address aligned to FEC_SIMD_ALIGNMENT
+ * @param inpkts the "primary blocks" i.e. the chunks of the input data, all chunks must begin at an address aligned to ZFEC_SIMD_ALIGNMENT
+ * @param fecs buffers into which the secondary blocks will be written, all blocks indicated through block_nums must begin at an address aligned to ZFEC_SIMD_ALIGNMENT
  * @param block_nums the numbers of the desired check blocks (the id >= k) which fec_encode() will produce and store into the buffers of the fecs parameter
  * @param num_block_nums the length of the block_nums array
  * @param sz size of a packet in bytes
@@ -76,13 +72,14 @@ void fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts
 #endif
 
 /**
- * zfec -- fast forward error correction library with Python interface
- * 
+ * zfec-fast -- fast forward error correction library with Python interface
+ *
  * Copyright (C) 2007-2008 Allmydata, Inc.
  * Author: Zooko Wilcox-O'Hearn
- * 
- * This file is part of zfec.
- * 
+ * Copyright (C) 2022 Wojciech Migda
+ *
+ * This file is part of zfec-fast.
+ *
  * See README.rst for licensing information.
  */
 

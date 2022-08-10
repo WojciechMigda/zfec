@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
-# zfec -- a fast C implementation of Reed-Solomon erasure coding with
+# zfex -- a fast C implementation of Reed-Solomon erasure coding with
 # command-line, C, and Python interfaces
 
 from __future__ import print_function
 
 import os, sys, argparse
 
-from zfec import filefec
+from zfex import filefec
 
-from zfec import __version__ as libversion
+from zfex import __version__ as libversion
 __version__ = libversion
 
 def main():
     if '-V' in sys.argv or '--version' in sys.argv:
-        print("zfec library version: ", libversion)
-        print("zunfec command-line tool version: ", __version__)
+        print("zfex library version: ", libversion)
+        print("zunfex command-line tool version: ", __version__)
         return 0
 
     parser = argparse.ArgumentParser(description="Decode data from share files.")
@@ -61,11 +61,11 @@ def main():
 
     return 0
 
-# zfec -- fast forward error correction library with Python interface
+# zfex -- fast forward error correction library with Python interface
 # 
 # Copyright (C) 2007 Allmydata, Inc.
 # Author: Zooko Wilcox-O'Hearn
 # 
-# This file is part of zfec.
+# This file is part of zfex.
 #
 # See README.rst for licensing information.

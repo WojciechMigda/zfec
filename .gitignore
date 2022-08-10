@@ -4,7 +4,7 @@
 *.pyo
 *.DS_Store
 build/*
-zfec.egg-info
+zfex.egg-info
 dist/*
 .cabal-sandbox/
 cabal.sandbox.config

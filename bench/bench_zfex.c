@@ -1,5 +1,5 @@
-#include "fec.h"
-#include "zfec_macros.h"
+#include "zfex.h"
+#include "zfex_macros.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -204,7 +204,7 @@ int parse_args(int argc, char* argv[], parsed_args_t *parsed_p)
 
         fprintf(stderr,
             "\n"
-            "Usage: bench_zfec [options]\n\n"
+            "Usage: bench_zfex [options]\n\n"
             "Options:\n"
             "         -m UINT64 the total number of blocks produced, 1 <= m <= 256\n"
             "         -k UINT64 how many of blocks produced are necessary to reconstruct the original data, 1 <= k <= m\n"
@@ -361,18 +361,18 @@ int main(int argc, char **argv)
     size_t const UNITS_PER_SECOND = 1000000000;
     size_t const DATA_SZ = parsed_args.data_sz;
     size_t const fec_sz = (DATA_SZ + parsed_args.k - 1) / parsed_args.k;
-    /* fec_simd_aligned_sz is fec_sz rounded up to ZFEC_SIMD_ALIGNMENT boundary */
+    /* fec_simd_aligned_sz is fec_sz rounded up to ZFEX_SIMD_ALIGNMENT boundary */
     size_t const fec_simd_aligned_sz = parsed_args.simd ?
-        (fec_sz + ZFEC_SIMD_ALIGNMENT - 1) & ~(ZFEC_SIMD_ALIGNMENT - 1) : fec_sz;
+        (fec_sz + ZFEX_SIMD_ALIGNMENT - 1) & ~(ZFEX_SIMD_ALIGNMENT - 1) : fec_sz;
 
     if (parsed_args.quiet == FALSE)
     {
-        printf("Built with:\n  ZFEC_STRIDE=%d\n  UNROLL=%d\n", ZFEC_STRIDE, UNROLL);
-        printf("  ZFEC_SIMD_ALIGNMENT=%d\n", ZFEC_SIMD_ALIGNMENT);
-        printf("  ZFEC_INTEL_SSSE3_FEATURE=%d\n", ZFEC_INTEL_SSSE3_FEATURE);
-        printf("  ZFEC_ARM_NEON_FEATURE=%d\n", ZFEC_ARM_NEON_FEATURE);
-        printf("  ZFEC_INLINE_ADDMUL_FEATURE=%d\n", ZFEC_INLINE_ADDMUL_FEATURE);
-        printf("  ZFEC_INLINE_ADDMUL_SIMD_FEATURE=%d\n", ZFEC_INLINE_ADDMUL_SIMD_FEATURE);
+        printf("Built with:\n  ZFEX_STRIDE=%d\n  UNROLL=%d\n", ZFEX_STRIDE, UNROLL);
+        printf("  ZFEX_SIMD_ALIGNMENT=%d\n", ZFEX_SIMD_ALIGNMENT);
+        printf("  ZFEX_INTEL_SSSE3_FEATURE=%d\n", ZFEX_INTEL_SSSE3_FEATURE);
+        printf("  ZFEX_ARM_NEON_FEATURE=%d\n", ZFEX_ARM_NEON_FEATURE);
+        printf("  ZFEX_INLINE_ADDMUL_FEATURE=%d\n", ZFEX_INLINE_ADDMUL_FEATURE);
+        printf("  ZFEX_INLINE_ADDMUL_SIMD_FEATURE=%d\n", ZFEX_INLINE_ADDMUL_SIMD_FEATURE);
 
         printf("Measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
     }
@@ -381,12 +381,12 @@ int main(int argc, char **argv)
      * I allocate chunk of memory that will be already padded
      * to a multiple of fec_sz. It will store both input and
      * output blocks, a total of m blocks.
-     * Allocated chunk might not be aligned on ZFEC_SIMD_ALIGNMENT,
-     * so I need to compensate for this by allocating extra ZFEC_SIMD_ALIGNMENT - 1 bytes
-     * and then rounding the address up to the ZFEC_SIMD_ALIGNMENT boundary.
+     * Allocated chunk might not be aligned on ZFEX_SIMD_ALIGNMENT,
+     * so I need to compensate for this by allocating extra ZFEX_SIMD_ALIGNMENT - 1 bytes
+     * and then rounding the address up to the ZFEX_SIMD_ALIGNMENT boundary.
      */
-    gf *unaligned_data_p = calloc(fec_simd_aligned_sz * parsed_args.m + (ZFEC_SIMD_ALIGNMENT - 1), 1);
-    gf *data_p = (gf *)(((uintptr_t)unaligned_data_p + ZFEC_SIMD_ALIGNMENT - 1) & ~(ZFEC_SIMD_ALIGNMENT - 1));
+    gf *unaligned_data_p = calloc(fec_simd_aligned_sz * parsed_args.m + (ZFEX_SIMD_ALIGNMENT - 1), 1);
+    gf *data_p = (gf *)(((uintptr_t)unaligned_data_p + ZFEX_SIMD_ALIGNMENT - 1) & ~(ZFEX_SIMD_ALIGNMENT - 1));
 
     fec_t *fec_p = fec_new(parsed_args.k, parsed_args.m);
 

@@ -24,7 +24,7 @@ exposed-modules: Codec.FEC
 extensions:      ForeignFunctionInterface
 hs-source-dirs:  haskell
 ghc-options:     -Wall
-c-sources:       zfec/fec.c
+c-sources:       zfex/zfex.c
 cc-options:      -std=c99
-include-dirs:    zfec
-extra-source-files: zfec/fec.h, COPYING.GPL, COPYING.TGPPL.rst
+include-dirs:    zfex
+extra-source-files: zfex/zfex.h, zfex/zfex_pp.h, zfex/zfex_macros.h, COPYING.GPL, COPYING.TGPPL.rst

@@ -1,7 +1,7 @@
 
 
-zfec-fast -- efficient, portable erasure coding tool
-====================================================
+zfex -- efficient, portable erasure coding tool
+===============================================
 
 Generate redundant blocks of information such that if some of the blocks are
 lost then the original data can be recovered from the remaining blocks. This
@@ -30,9 +30,9 @@ has a similar effect, but instead of recovering from the loss of only a
 single element, it can be parameterized to choose in advance the number of
 elements whose loss it can tolerate.
 
-This package is a for of ``zfec`` library, which is largely based on
+This package is a fork of ``zfec`` library, which is largely based on
 the old "fec" library by Luigi Rizzo et al.,
-which is a mature and optimized implementation of erasure coding.  The ``zfec-fast``
+which is a mature and optimized implementation of erasure coding.  The ``zfex``
 package makes several changes from the original ``zfec`` package, including
 new C-based benchmark tool and a new SIMD-friendly API.
 
@@ -40,7 +40,7 @@ new C-based benchmark tool and a new SIMD-friendly API.
 Installation
 ------------
 
-``pip install zfec-fast``
+``pip install zfex``
 
 To run the self-tests, execute ``tox`` from an unpacked source tree or git checkout.
 
@@ -50,28 +50,28 @@ Note that in order to run the Haskell API tests you must have installed the
 library first due to the fact that the interpreter cannot process FEC.hs as
 it takes a reference to an FFI function.
 
-To install ``zfec-fast`` built with custom compilation flags, execute:
+To install ``zfex`` built with custom compilation flags, execute:
 
-``CFLAGS="-O3" pip install git+https://github.com/WojciechMigda/zfec-fast.git``
+``CFLAGS="-O3" pip install git+https://github.com/WojciechMigda/zfex.git``
 
-If ``zfec-fast`` is already cloned locally, then custom compiler flags can be passed to ``setup.py`` to install ``zfec-fast`` like follows:
+If ``zfex`` is already cloned locally, then custom compiler flags can be passed to ``setup.py`` to install ``zfex`` like follows:
 
 ``CFLAGS="-O3" python setup.py install``
 
 In similar manner, one can override compiler being used. Simply issue:
 
-``CC=arm-linux-gnueabihf-gcc-7 pip install git+https://github.com/WojciechMigda/zfec-fast.git``
+``CC=arm-linux-gnueabihf-gcc-7 pip install git+https://github.com/WojciechMigda/zfex.git``
 
 Community
 ---------
 
 The source is currently available via git on the web with the command:
 
-``git clone https://github.com/WojciechMigda/zfec-fast``
+``git clone https://github.com/WojciechMigda/zfex``
 
-If you find a bug in ``zfec-fast``, please open an issue on github:
+If you find a bug in ``zfex``, please open an issue on github:
 
-<https://github.com/WojciechMigda/zfec-fast/issues>
+<https://github.com/WojciechMigda/zfex/issues>
 
 Overview
 --------
@@ -101,9 +101,9 @@ the same size as all the others).  In addition to the data contained in the
 blocks themselves there are also a few pieces of metadata which are necessary
 for later reconstruction.  Those pieces are: 1.  the value of *K*, 2.  the
 value of *M*, 3.  the sharenum of each block, 4.  the number of bytes of
-padding that were used.  The "zfec" command-line tool compresses these pieces
+padding that were used.  The "zfex" command-line tool compresses these pieces
 of data and prepends them to the beginning of each share, so each the
-sharefile produced by the "zfec" command-line tool is between one and four
+sharefile produced by the "zfex" command-line tool is between one and four
 bytes larger than the share data alone.
 
 The decoding step requires as input *k* of the blocks which were produced by
@@ -114,8 +114,8 @@ earlier input to the encoding step.
 Command-Line Tool
 -----------------
 
-The bin/ directory contains two Unix-style, command-line tools ``zfec`` and
-``zunfec``.  Execute ``zfec --help`` or ``zunfec --help`` for usage
+The bin/ directory contains two Unix-style, command-line tools ``zfex`` and
+``zunfex``.  Execute ``zfex --help`` or ``zunfex --help`` for usage
 instructions.
 
 
@@ -182,7 +182,7 @@ then it will by default provide the blocks with ids from *k* to *m*-1 inclusive.
   There is another encoding API provided, ``fec_encode_simd()``, which imposes
   additional requirements on memory blocks passed, ones which contain input blocks
   of data and those where output block will be written. These blocks are expected
-  to be aligned to ``FEC_SIMD_ALIGNMENT``. ``fec_encode_simd()`` checks pointers
+  to be aligned to ``ZFEX_SIMD_ALIGNMENT``. ``fec_encode_simd()`` checks pointers
   to these blocks and returns status code, which equals ``EXIT_SUCCESS`` when
   the validation passed and encoding completed, or ``EXIT_FAILURE`` when input
   and output requirements were not met.
@@ -198,8 +198,7 @@ then it will by default provide the blocks with ids from *k* to *m*-1 inclusive.
   the data from a file and pass it to "class Encoder".  The Python interface
   provides these higher-level operations, as does the Haskell interface.  If
   you implement functions to do these higher-level tasks in other languages,
-  please send a patch to tahoe-dev@tahoe-lafs.org so that your API can be
-  included in future releases of zfec.
+  please send a patch so that your API can be included in future releases of zfex.
 
   ``fec_decode()`` takes as input an array of *k* pointers, where each pointer
   points to a buffer containing a block.  There is also a separate input
@@ -243,12 +242,12 @@ then it will by default provide the blocks with ids from *k* to *m*-1 inclusive.
 
   Returning references to its inputs is efficient since it avoids making an
   unnecessary copy of the data, but if the object which was passed as input
-  is mutable and if that object is mutated after the call to zfec returns,
-  then the result from zfec -- which is just a reference to that same object
+  is mutable and if that object is mutated after the call to zfex returns,
+  then the result from zfex -- which is just a reference to that same object
   -- will also be mutated.  This subtlety is the price you pay for avoiding
   data copying.  If you don't want to have to worry about this then you can
   simply use immutable objects (e.g. Python strings) to hold the data that
-  you pass to ``zfec``.
+  you pass to ``zfex``.
 
   Currently, ``fec_encode_simd()`` C API does not have a python wrapper.
 
@@ -262,8 +261,8 @@ Utilities
 ---------
 
 The ``filefec.py`` module has a utility function for efficiently reading a file
-and encoding it piece by piece.  This module is used by the "zfec" and
-"zunfec" command-line tools from the bin/ directory.
+and encoding it piece by piece.  This module is used by the "zfex" and
+"zunfex" command-line tools from the bin/ directory.
 
 
 Dependencies
@@ -299,9 +298,9 @@ inspired Intel SIMD-optimizations introduced here.
 Related Works
 -------------
 
-Note: a Unix-style tool like "zfec" does only one thing -- in this case
+Note: a Unix-style tool like "zfex" does only one thing -- in this case
 erasure coding -- and leaves other tasks to other tools.  Other Unix-style
-tools that go well with zfec include `GNU tar`_ for archiving multiple files
+tools that go well with zfex include `GNU tar`_ for archiving multiple files
 and directories into one file, `lzip`_ for compression, and `GNU Privacy
 Guard`_ for encryption or `b2sum`_ for integrity.  It is important to do
 things in order: first archive, then compress, then either encrypt or
@@ -313,8 +312,8 @@ coding in *addition* to doing it on the file contents! (There are two
 different subtle failure modes -- see "more than one file can match an
 immutable file cap" on the `Hack Tahoe-LAFS!`_ Hall of Fame.)
 
-`fecpp`_ is an alternative to zfec. It implements a bitwise-compatible
-algorithm to zfec and is BSD-licensed.
+`fecpp`_ is an alternative to zfex. It implements a bitwise-compatible
+algorithm to zfex and is BSD-licensed.
 
 .. _GNU tar: http://directory.fsf.org/project/tar/
 .. _lzip: http://www.nongnu.org/lzip/lzip.html
@@ -329,18 +328,18 @@ Enjoy!
 
 ----
 
-.. |pypi| image:: http://img.shields.io/pypi/v/zfec-fast.svg
+.. |pypi| image:: http://img.shields.io/pypi/v/zfex.svg
    :alt: PyPI release status
-   :target: https://pypi.python.org/pypi/zfec-fast
+   :target: https://pypi.python.org/pypi/zfex
 
-.. |build| image:: https://github.com/WojciechMigda/zfec-fast/actions/workflows/build.yml/badge.svg
+.. |build| image:: https://github.com/WojciechMigda/zfex/actions/workflows/build.yml/badge.svg
    :alt: Package Build
-   :target: https://github.com/WojciechMigda/zfec-fast/actions/workflows/build.yml
+   :target: https://github.com/WojciechMigda/zfex/actions/workflows/build.yml
 
-.. |test-intel| image:: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test.yml/badge.svg
+.. |test-intel| image:: https://github.com/WojciechMigda/zfex/actions/workflows/test.yml/badge.svg
    :alt: Tests on Intel hardware
-   :target: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test.yml
+   :target: https://github.com/WojciechMigda/zfex/actions/workflows/test.yml
 
-.. |test-arm| image:: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test-qemu.yml/badge.svg
+.. |test-arm| image:: https://github.com/WojciechMigda/zfex/actions/workflows/test-qemu.yml/badge.svg
    :alt: Tests on ARM qemu-emulated environment
-   :target: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test-qemu.yml
+   :target: https://github.com/WojciechMigda/zfex/actions/workflows/test-qemu.yml

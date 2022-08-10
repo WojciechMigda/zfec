@@ -1,13 +1,13 @@
 
 
-zfec -- efficient, portable erasure coding tool
-===============================================
+zfec-fast -- efficient, portable erasure coding tool
+====================================================
 
 Generate redundant blocks of information such that if some of the blocks are
 lost then the original data can be recovered from the remaining blocks. This
 package includes command-line tools, C API, Python API, and Haskell API.
 
-|build| |test| |pypi|
+|build| |test-intel| |test-arm| |pypi|
 
 Intro and Licence
 -----------------
@@ -30,18 +30,17 @@ has a similar effect, but instead of recovering from the loss of only a
 single element, it can be parameterized to choose in advance the number of
 elements whose loss it can tolerate.
 
-This package is largely based on the old "fec" library by Luigi Rizzo et al.,
-which is a mature and optimized implementation of erasure coding.  The zfec
-package makes several changes from the original "fec" package, including
-addition of the Python API, refactoring of the C API to support zero-copy
-operation, a few clean-ups and optimizations of the core code itself, and the
-addition of a command-line tool named "zfec".
+This package is a for of ``zfec`` library, which is largely based on
+the old "fec" library by Luigi Rizzo et al.,
+which is a mature and optimized implementation of erasure coding.  The ``zfec-fast``
+package makes several changes from the original ``zfec`` package, including
+new C-based benchmark tool and a new SIMD-friendly API.
 
 
 Installation
 ------------
 
-``pip install zfec``
+``pip install zfec-fast``
 
 To run the self-tests, execute ``tox`` from an unpacked source tree or git checkout.
 
@@ -51,32 +50,28 @@ Note that in order to run the Haskell API tests you must have installed the
 library first due to the fact that the interpreter cannot process FEC.hs as
 it takes a reference to an FFI function.
 
-To install ``zfec`` built with custom compilation flags, execute:
+To install ``zfec-fast`` built with custom compilation flags, execute:
 
-``CFLAGS="-O3" pip install git+https://github.com/WojciechMigda/zfec.git``
+``CFLAGS="-O3" pip install git+https://github.com/WojciechMigda/zfec-fast.git``
 
-If ``zfec`` is already cloned locally, then custom compiler flags can be passed to ``setup.py`` to install ``zfec`` like follows:
+If ``zfec-fast`` is already cloned locally, then custom compiler flags can be passed to ``setup.py`` to install ``zfec-fast`` like follows:
 
 ``CFLAGS="-O3" python setup.py install``
 
 In similar manner, one can override compiler being used. Simply issue:
 
-``CC=arm-linux-gnueabihf-gcc-7 pip install git+https://github.com/WojciechMigda/zfec.git``
+``CC=arm-linux-gnueabihf-gcc-7 pip install git+https://github.com/WojciechMigda/zfec-fast.git``
 
 Community
 ---------
 
 The source is currently available via git on the web with the command:
 
-``git clone https://github.com/tahoe-lafs/zfec``
+``git clone https://github.com/WojciechMigda/zfec-fast``
 
-Please post about zfec to the Tahoe-LAFS mailing list and contribute patches:
+If you find a bug in ``zfec-fast``, please open an issue on github:
 
-<https://tahoe-lafs.org/cgi-bin/mailman/listinfo/tahoe-dev>
-
-If you find a bug in zfec, please open an issue on github:
-
-<https://github.com/tahoe-lafs/zfec/issues>
+<https://github.com/WojciechMigda/zfec-fast/issues>
 
 Overview
 --------
@@ -87,31 +82,31 @@ called "secondary blocks".  Decoding takes some data -- any combination of
 blocks of the original data (called "primary blocks") and "secondary blocks",
 and produces the original data.
 
-The encoding is parameterized by two integers, k and m.  m is the total
-number of blocks produced, and k is how many of those blocks are necessary to
-reconstruct the original data.  m is required to be at least 1 and at most
-256, and k is required to be at least 1 and at most m.
+The encoding is parameterized by two integers, *k* and *m*.  *m* is the total
+number of blocks produced, and *k* is how many of those blocks are necessary to
+reconstruct the original data.  *m* is required to be at least 1 and at most
+256, and *k* is required to be at least 1 and at most *m*.
 
-(Note that when k == m then there is no point in doing erasure coding -- it
+(Note that when *k* == *m* then there is no point in doing erasure coding -- it
 degenerates to the equivalent of the Unix "split" utility which simply splits
-the input into successive segments.  Similarly, when k == 1 it degenerates to
+the input into successive segments.  Similarly, when *k* == 1 it degenerates to
 the equivalent of the unix "cp" utility -- each block is a complete copy of
 the input data.)
 
 Note that each "primary block" is a segment of the original data, so its size
-is 1/k'th of the size of original data, and each "secondary block" is of the
-same size, so the total space used by all the blocks is m/k times the size of
+is 1/*k*'th of the size of original data, and each "secondary block" is of the
+same size, so the total space used by all the blocks is *m*/*k* times the size of
 the original data (plus some padding to fill out the last primary block to be
 the same size as all the others).  In addition to the data contained in the
 blocks themselves there are also a few pieces of metadata which are necessary
-for later reconstruction.  Those pieces are: 1.  the value of K, 2.  the
-value of M, 3.  the sharenum of each block, 4.  the number of bytes of
+for later reconstruction.  Those pieces are: 1.  the value of *K*, 2.  the
+value of *M*, 3.  the sharenum of each block, 4.  the number of bytes of
 padding that were used.  The "zfec" command-line tool compresses these pieces
 of data and prepends them to the beginning of each share, so each the
 sharefile produced by the "zfec" command-line tool is between one and four
 bytes larger than the share data alone.
 
-The decoding step requires as input k of the blocks which were produced by
+The decoding step requires as input *k* of the blocks which were produced by
 the encoding step.  The decoding step produces as output the data that was
 earlier input to the encoding step.
 
@@ -119,13 +114,15 @@ earlier input to the encoding step.
 Command-Line Tool
 -----------------
 
-The bin/ directory contains two Unix-style, command-line tools "zfec" and
-"zunfec".  Execute ``zfec --help`` or ``zunfec --help`` for usage
+The bin/ directory contains two Unix-style, command-line tools ``zfec`` and
+``zunfec``.  Execute ``zfec --help`` or ``zunfec --help`` for usage
 instructions.
 
 
 Performance
 -----------
+
+**TODO: update with new results**
 
 To run the benchmarks, execute the included bench/bench_zfec.py script with
 optional --k= and --m= arguments.
@@ -165,29 +162,38 @@ Each block is associated with "blocknum".  The blocknum of each primary block
 is its index (starting from zero), so the 0'th block is the first primary
 block, which is the first few bytes of the file, the 1'st block is the next
 primary block, which is the next few bytes of the file, and so on.  The last
-primary block has blocknum k-1.  The blocknum of each secondary block is an
-arbitrary integer between k and 255 inclusive.  (When using the Python API,
+primary block has blocknum *k*-1.  The blocknum of each secondary block is an
+arbitrary integer between *k* and 255 inclusive.  (When using the Python API,
 if you don't specify which secondary blocks you want when invoking encode(),
-then it will by default provide the blocks with ids from k to m-1 inclusive.)
+then it will by default provide the blocks with ids from *k* to *m*-1 inclusive.)
 
 - C API
 
-  fec_encode() takes as input an array of k pointers, where each pointer
-  points to a memory buffer containing the input data (i.e., the i'th buffer
-  contains the i'th primary block).  There is also a second parameter which
+  ``fec_encode()`` takes as input an array of *k* pointers, where each pointer
+  points to a memory buffer containing the input data (i.e., the *i*'th buffer
+  contains the *i*'th primary block).  There is also a second parameter which
   is an array of the blocknums of the secondary blocks which are to be
   produced.  (Each element in that array is required to be the blocknum of a
-  secondary block, i.e. it is required to be >= k and < m.)
+  secondary block, i.e. it is required to be >= *k* and < *m*.)
 
-  The output from fec_encode() is the requested set of secondary blocks which
+  The output from ``fec_encode()`` is the requested set of secondary blocks which
   are written into output buffers provided by the caller.
 
-  Note that this fec_encode() is a "low-level" API in that it requires the
+  There is another encoding API provided, ``fec_encode_simd()``, which imposes
+  additional requirements on memory blocks passed, ones which contain input blocks
+  of data and those where output block will be written. These blocks are expected
+  to be aligned to ``FEC_SIMD_ALIGNMENT``. ``fec_encode_simd()`` checks pointers
+  to these blocks and returns status code, which equals ``EXIT_SUCCESS`` when
+  the validation passed and encoding completed, or ``EXIT_FAILURE`` when input
+  and output requirements were not met.
+
+  Note that this ``fec_encode()`` and ``fec_encode_simd()`` are a "low-level" API
+  in that it requires the
   input data to be provided in a set of memory buffers of exactly the right
   sizes.  If you are starting instead with a single buffer containing all of
   the data then please see easyfec.py's "class Encoder" as an example of how
   to split a single large buffer into the appropriate set of input buffers
-  for fec_encode().  If you are starting with a file on disk, then please see
+  for ``fec_encode()``.  If you are starting with a file on disk, then please see
   filefec.py's encode_file_stringy_easyfec() for an example of how to read
   the data from a file and pass it to "class Encoder".  The Python interface
   provides these higher-level operations, as does the Haskell interface.  If
@@ -195,35 +201,35 @@ then it will by default provide the blocks with ids from k to m-1 inclusive.)
   please send a patch to tahoe-dev@tahoe-lafs.org so that your API can be
   included in future releases of zfec.
 
-  fec_decode() takes as input an array of k pointers, where each pointer
+  ``fec_decode()`` takes as input an array of *k* pointers, where each pointer
   points to a buffer containing a block.  There is also a separate input
   parameter which is an array of blocknums, indicating the blocknum of each
   of the blocks which is being passed in.
 
-  The output from fec_decode() is the set of primary blocks which were
+  The output from ``fec_decode()`` is the set of primary blocks which were
   missing from the input and had to be reconstructed.  These reconstructed
   blocks are written into output buffers provided by the caller.
 
 
 - Python API
 
-  encode() and decode() take as input a sequence of k buffers, where a
+  ``encode()`` and ``decode()`` take as input a sequence of *k* buffers, where a
   "sequence" is any object that implements the Python sequence protocol (such
   as a list or tuple) and a "buffer" is any object that implements the Python
   buffer protocol (such as a string or array).  The contents that are
   required to be present in these buffers are the same as for the C API.
 
-  encode() also takes a list of desired blocknums.  Unlike the C API, the
+  ``encode()`` also takes a list of desired blocknums.  Unlike the C API, the
   Python API accepts blocknums of primary blocks as well as secondary blocks
-  in its list of desired blocknums.  encode() returns a list of buffer
+  in its list of desired blocknums.  ``encode()`` returns a list of buffer
   objects which contain the blocks requested.  For each requested block which
   is a primary block, the resulting list contains a reference to the
   apppropriate primary block from the input list.  For each requested block
   which is a secondary block, the list contains a newly created string object
   containing that block.
 
-  decode() also takes a list of integers indicating the blocknums of the
-  blocks being passed int.  decode() returns a list of buffer objects which
+  ``decode()`` also takes a list of integers indicating the blocknums of the
+  blocks being passed int.  ``decode()`` returns a list of buffer objects which
   contain all of the primary blocks of the original data (in order).  For
   each primary block which was present in the input list, then the result
   list simply contains a reference to the object that was passed in the input
@@ -242,7 +248,9 @@ then it will by default provide the blocks with ids from k to m-1 inclusive.)
   -- will also be mutated.  This subtlety is the price you pay for avoiding
   data copying.  If you don't want to have to worry about this then you can
   simply use immutable objects (e.g. Python strings) to hold the data that
-  you pass to zfec.
+  you pass to ``zfec``.
+
+  Currently, ``fec_encode_simd()`` C API does not have a python wrapper.
 
 - Haskell API
 
@@ -253,7 +261,7 @@ then it will by default provide the blocks with ids from k to m-1 inclusive.)
 Utilities
 ---------
 
-The filefec.py module has a utility function for efficiently reading a file
+The ``filefec.py`` module has a utility function for efficiently reading a file
 and encoding it piece by piece.  This module is used by the "zfec" and
 "zunfec" command-line tools from the bin/ directory.
 
@@ -277,11 +285,15 @@ Warner and Amber O'Whielacronx for help with the API, documentation,
 debugging, compression, and unit tests.  Thanks to Adam Langley for improving
 the C API and contributing the Haskell API.  Thanks to the creators of GCC
 (starting with Richard M. Stallman) and Valgrind (starting with Julian
-Seward) for a pair of excellent tools.  Thanks to my coworkers at Allmydata
+Seward) for a pair of excellent tools.  Thanks to employees at Allmydata
 -- http://allmydata.com -- Fabrice Grinda, Peter Secor, Rob Kinninmont, Brian
-Warner, Zandr Milewski, Justin Boreta, Mark Meras for sponsoring this work
+Warner, Zandr Milewski, Justin Boreta, Mark Meras for sponsoring part of this work (original ``zfec``)
 and releasing it under a Free Software licence. Thanks to Jack Lloyd, Samuel
 Neves, and David-Sarah Hopwood.
+Last, but not least, thanks to the authors of original ``zfec`` library, from which
+this one forked from.
+Thanks to Gabs Ricalde, for contributing ARM SIMD-optimized code to ``zfec``, which then
+inspired Intel SIMD-optimizations introduced here.
 
 
 Related Works
@@ -301,12 +313,6 @@ coding in *addition* to doing it on the file contents! (There are two
 different subtle failure modes -- see "more than one file can match an
 immutable file cap" on the `Hack Tahoe-LAFS!`_ Hall of Fame.)
 
-The `Tahoe-LAFS`_ project uses zfec as part of a complete distributed
-filesystem with integrated encryption, integrity, remote distribution of the
-blocks, directory structure, backup of changed files or directories, access
-control, immutable files and directories, proof-of-retrievability, and repair
-of damaged files and directories.
-
 `fecpp`_ is an alternative to zfec. It implements a bitwise-compatible
 algorithm to zfec and is BSD-licensed.
 
@@ -314,29 +320,27 @@ algorithm to zfec and is BSD-licensed.
 .. _lzip: http://www.nongnu.org/lzip/lzip.html
 .. _GNU Privacy Guard: http://gnupg.org/
 .. _b2sum: https://blake2.net/
-.. _Tahoe-LAFS: https://tahoe-lafs.org
 .. _Hack Tahoe-LAFS!: https://tahoe-lafs.org/hacktahoelafs/
 .. _fecpp: http://www.randombit.net/code/fecpp/
 
 
 Enjoy!
 
-Zooko Wilcox-O'Hearn
-
-2013-05-15
-
-Boulder, Colorado
 
 ----
 
-.. |pypi| image:: http://img.shields.io/pypi/v/zfec.svg
+.. |pypi| image:: http://img.shields.io/pypi/v/zfec-fast.svg
    :alt: PyPI release status
-   :target: https://pypi.python.org/pypi/zfec
+   :target: https://pypi.python.org/pypi/zfec-fast
 
-.. |build| image:: https://github.com/tahoe-lafs/zfec/actions/workflows/build.yml/badge.svg
+.. |build| image:: https://github.com/WojciechMigda/zfec-fast/actions/workflows/build.yml/badge.svg
    :alt: Package Build
-   :target: https://github.com/tahoe-lafs/zfec/actions/workflows/build.yml
+   :target: https://github.com/WojciechMigda/zfec-fast/actions/workflows/build.yml
 
-.. |test| image:: https://github.com/tahoe-lafs/zfec/actions/workflows/test.yml/badge.svg
-   :alt: Tests
-   :target: https://github.com/tahoe-lafs/zfec/actions/workflows/test.yml
+.. |test-intel| image:: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test.yml/badge.svg
+   :alt: Tests on Intel hardware
+   :target: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test.yml
+
+.. |test-arm| image:: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test-qemu.yml/badge.svg
+   :alt: Tests on ARM qemu-emulated environment
+   :target: https://github.com/WojciechMigda/zfec-fast/actions/workflows/test-qemu.yml

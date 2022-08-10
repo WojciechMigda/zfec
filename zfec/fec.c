@@ -291,7 +291,56 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
         _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
     }
 
-#else /* not ZFEC_USE_INTEL_SSSE3 */
+#elif ((defined __arm__) || (defined __arm) || (defined _ARM) || (defined _M_ARM)) && (defined __ARM_NEON__) && (defined ZFEC_USE_ARM_NEON) && (UNROLL == 16)
+    // Idea from https://botan.randombit.net zfec_vperm.cpp
+
+    USE_GF_MULC;
+    GF_MULC0 (c);
+    const gf* lim = &dst[sz - UNROLL + 1];
+    const gf * const gf_mulc_16 = gf_mul_table_16[c];
+
+    /* 
+     * for (; dst < lim; dst += 16, src += 16) {
+     *   // 16x parallel
+     *   for (int i = 0; i < 16; i++) {
+     *     dst[i] ^= __gf_mulc_[src[i] & 0x0f] ^ gf_mulc_16[src[i] >> 4];
+     *   }
+     * }
+     * dst should be aligned to 16 bytes
+     */
+    __asm__(
+        "vmov.i8  q0, #0x0f              \n\t"  // q0 = 0x0f0f...0f
+        "vld1.8   {q3}, [%[gf_mulc]]     \n\t"  // q3 = gf_mulc[0..15]
+        "vld1.8   {q8}, [%[gf_mulc_16]]  \n\t"  // q8 = gf_mulc_16[0..15]
+    "1:                                  \n\t"  //
+        "cmp      %[dst], %[lim]         \n\t"  //
+        "bhs      2f                     \n\t"  // while (dst < lim) {
+        "vld1.8   {q2}, [%[src]]!        \n\t"  //   q2 = src[0..15];  src += 16
+        "vld1.8   {q1}, [%[dst]:128]     \n\t"  //   q1 = dst[0..15]
+        "vand.8   q9, q2, q0             \n\t"  //   q9 = src & 0x0f0f...0f
+        "vtbl.8   d18, {q3}, d18         \n\t"  //
+        "vshr.u8  q10, q2, #4            \n\t"  //   q10 = src >> 4
+        "vtbl.8   d19, {q3}, d19         \n\t"  //   q9 = gf_mulc[q9]
+        "vtbl.8   d20, {q8}, d20         \n\t"  //
+        "vtbl.8   d21, {q8}, d21         \n\t"  //   q10 = gf_mulc_16[q10]
+        "veorq.8  q1, q9                 \n\t"  //
+        "veorq.8  q1, q10                \n\t"  //
+        "vst1.8   {q1}, [%[dst]:128]!    \n\t"  //   dst[0..15] ^= q9 ^ q10;  dst += 16
+        "b        1b                     \n\t"  //
+    "2:                                  \n\t"  // }
+        : [dst]"+r"(dst),
+          [src]"+r"(src)
+        : [lim]       "r"(lim),
+          [gf_mulc]   "r"(__gf_mulc_),
+          [gf_mulc_16]"r"(gf_mulc_16)
+        : "q0", "q1", "q2", "q3", "q8", "q9", "q10", "memory", "cc"
+    );
+
+    lim += UNROLL - 1;
+    for (; dst < lim; dst++, src++)       /* final components */
+        GF_ADDMULC (*dst, *src);
+
+#else /* not ZFEC_USE_INTEL_SSSE3 && not ZFEC_USE_ARM_NEON */
 
     USE_GF_MULC;
     const gf* lim = &dst[sz - UNROLL + 1];
@@ -306,7 +355,6 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
 #undef OP
     }
 #endif
-
 
     lim += UNROLL - 1;
     for (; dst < lim; dst++, src++)       /* final components */
@@ -709,7 +757,7 @@ fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*
  * See README.rst for licensing information.
  *
  * Modifications by Wojciech Migda (see commits in
- * github.com/WojciechMigda/zfec repository for their scope).
+ * github.com/WojciechMigda/zfec-fast repository for their scope).
  * Modifications (C) 2022 Wojciech Migda (github.com/WojciechMigda)
  */
 

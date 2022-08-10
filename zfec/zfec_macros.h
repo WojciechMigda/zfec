@@ -1,6 +1,17 @@
 #ifndef __ZFEC_MACROS_H
 #define __ZFEC_MACROS_H
 
+/**
+ * zfec-fast -- fast forward error correction library with Python interface
+ *
+ * Copyright (C) 2007-2008 Allmydata, Inc.
+ * Author: Zooko Wilcox-O'Hearn
+ * Copyright (C) 2022 Wojciech Migda
+ *
+ * This file is part of zfec-fast.
+ *
+ * See README.rst for licensing information.
+ */
 
 #if ((defined __arm__) || (defined __arm) || (defined _ARM) || (defined _M_ARM))
 #define ZFEC_HAS_ARM 1

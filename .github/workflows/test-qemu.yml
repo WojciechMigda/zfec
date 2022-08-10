@@ -43,7 +43,7 @@ jobs:
             sudo apt-get --yes update
             sudo apt-get --yes install python3-pip
             yes | pip install twisted pyutil
-            export CFLAGS="-DZFEC_USE_ARM_NEON" && yes | pip install --verbose .[test]
+            export CFLAGS="-DZFEC_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3" && yes | pip install --verbose .[test]
             trial zfec
 
       - name: "Build and run benchmark tool on QEMU (cortex-a8)"
@@ -57,7 +57,7 @@ jobs:
             bench/bench_zfec -i 1 -r 1
             bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
             make -C bench clean
-            CFLAGS="-DZFEC_USE_ARM_NEON" make -C bench bench_zfec
+            CFLAGS="-DZFEC_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3" make -C bench bench_zfec
             bench/bench_zfec -i 1 -r 1
             bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
             bench/bench_zfec -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A

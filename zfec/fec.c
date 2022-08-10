@@ -4,6 +4,7 @@
 
 #include "fec.h"
 #include "fec_pp.h"
+#include "zfec_macros.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,10 +12,10 @@
 #include <assert.h>
 #include <stdint.h>
 
-#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3)
+#if (ZFEC_INTEL_SSSE3_FEATURE == 1)
 #include <emmintrin.h>
 #include <tmmintrin.h>
-#endif
+#endif /* ZFEC_INTEL_SSSE3_FEATURE == 1 */
 
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,
@@ -220,7 +221,7 @@ _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t 
         GF_ADDMULC (*dst, *src);
 }
 
-#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3)
+#if (ZFEC_INTEL_SSSE3_FEATURE == 1)
 /*
  * Convert 16-bit mask into __v16qu, in which each bit of the
  * mask [0, 1] is converted into [0, FF] byte.
@@ -240,7 +241,7 @@ __m128i mask_to_u128_SSSE3(uint16_t bitmap)
 
     return v;
 }
-#endif
+#endif /* ZFEC_INTEL_SSSE3_FEATURE == 1 */
 
 #define addmul_simd(dst, src, c, sz)                 \
     if (c != 0) _addmul1_simd(dst, src, c, sz)
@@ -255,7 +256,7 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
     src = __builtin_assume_aligned(src, FEC_SIMD_ALIGNMENT);
 #endif
 
-#if ((defined __x86_64__) || (defined __i386__)) && (defined ZFEC_USE_INTEL_SSSE3) && (UNROLL == 16)
+#if (ZFEC_INTEL_SSSE3_FEATURE == 1) && (UNROLL == 16)
 
     const gf* lim = &dst[sz - UNROLL + 1];
 
@@ -291,7 +292,7 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
         _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
     }
 
-#elif ((defined __arm__) || (defined __arm) || (defined _ARM) || (defined _M_ARM)) && (defined __ARM_NEON__) && (defined ZFEC_USE_ARM_NEON) && (UNROLL == 16)
+#elif (ZFEC_ARM_NEON_FEATURE == 1) && (UNROLL == 16)
     // Idea from https://botan.randombit.net zfec_vperm.cpp
 
     USE_GF_MULC;
@@ -340,7 +341,7 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
     for (; dst < lim; dst++, src++)       /* final components */
         GF_ADDMULC (*dst, *src);
 
-#else /* not ZFEC_USE_INTEL_SSSE3 && not ZFEC_USE_ARM_NEON */
+#else /* not ZFEC_INTEL_SSSE3_FEATURE && not ZFEC_ARM_NEON_FEATURE */
 
     USE_GF_MULC;
     const gf* lim = &dst[sz - UNROLL + 1];

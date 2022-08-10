@@ -249,12 +249,8 @@ __m128i mask_to_u128_SSSE3(uint16_t bitmap)
 static void
 _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
 {
-    /* __builtin_assume_aligned first appeared in GCC 4.7, and clang 3.6 */
-#if (defined __GNUC__ && ((__GNUC__ * 100 + __GNUC_MINOR__) > 407)) || \
-    (defined __clang_major__ && ((__clang_major__ * 100 + __clang_minor__) > 306))
-    dst = __builtin_assume_aligned(dst, ZFEC_SIMD_ALIGNMENT);
-    src = __builtin_assume_aligned(src, ZFEC_SIMD_ALIGNMENT);
-#endif
+    dst = ZFEC_ASSUME_ALIGNED(dst, ZFEC_SIMD_ALIGNMENT);
+    src = ZFEC_ASSUME_ALIGNED(src, ZFEC_SIMD_ALIGNMENT);
 
 #if (ZFEC_INTEL_SSSE3_FEATURE == 1) && (UNROLL == 16)
 

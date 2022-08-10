@@ -52,4 +52,12 @@
 #endif
 
 
+/* __builtin_assume_aligned first appeared in GCC 4.7, and clang 3.6 */
+#if (defined __GNUC__ && ((__GNUC__ * 100 + __GNUC_MINOR__) > 407)) || \
+    (defined __clang_major__ && ((__clang_major__ * 100 + __clang_minor__) > 306))
+#define ZFEC_ASSUME_ALIGNED(what, align) __builtin_assume_aligned(what, align)
+#else
+#define ZFEC_ASSUME_ALIGNED(what, align) (what)
+#endif
+
 #endif /* __ZFEC_MACROS_H */

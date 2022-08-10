@@ -65,21 +65,21 @@ modnn(int x) {
  */
 static
 #ifdef _MSC_VER
-__declspec (align (FEC_SIMD_ALIGNMENT))
+__declspec (align (ZFEC_SIMD_ALIGNMENT))
 #endif
 gf gf_mul_table[256][256]
 #ifdef __GNUC__
-__attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
+__attribute__ ((aligned (ZFEC_SIMD_ALIGNMENT)))
 #endif
 ;
 
 static
 #ifdef _MSC_VER
-__declspec (align (FEC_SIMD_ALIGNMENT))
+__declspec (align (ZFEC_SIMD_ALIGNMENT))
 #endif
 gf gf_mul_table_16[256][16]
 #ifdef __GNUC__
-__attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
+__attribute__ ((aligned (ZFEC_SIMD_ALIGNMENT)))
 #endif
 ;
 
@@ -252,8 +252,8 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
     /* __builtin_assume_aligned first appeared in GCC 4.7, and clang 3.6 */
 #if (defined __GNUC__ && ((__GNUC__ * 100 + __GNUC_MINOR__) > 407)) || \
     (defined __clang_major__ && ((__clang_major__ * 100 + __clang_minor__) > 306))
-    dst = __builtin_assume_aligned(dst, FEC_SIMD_ALIGNMENT);
-    src = __builtin_assume_aligned(src, FEC_SIMD_ALIGNMENT);
+    dst = __builtin_assume_aligned(dst, ZFEC_SIMD_ALIGNMENT);
+    src = __builtin_assume_aligned(src, ZFEC_SIMD_ALIGNMENT);
 #endif
 
 #if (ZFEC_INTEL_SSSE3_FEATURE == 1) && (UNROLL == 16)
@@ -665,7 +665,7 @@ int fec_encode_simd(
     /* Verify input blocks addresses */
     for (ix = 0; ix < code->k; ++ix)
     {
-        if (((uintptr_t)inpkts[ix] % FEC_SIMD_ALIGNMENT) != 0)
+        if (((uintptr_t)inpkts[ix] % ZFEC_SIMD_ALIGNMENT) != 0)
         {
             return EXIT_FAILURE;
         }
@@ -674,7 +674,7 @@ int fec_encode_simd(
     /* Verify output blocks addresses */
     for (ix = 0; ix < num_block_nums; ++ix)
     {
-        if (((uintptr_t)fecs[ix] % FEC_SIMD_ALIGNMENT) != 0)
+        if (((uintptr_t)fecs[ix] % ZFEC_SIMD_ALIGNMENT) != 0)
         {
             return EXIT_FAILURE;
         }

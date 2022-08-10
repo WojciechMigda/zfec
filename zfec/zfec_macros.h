@@ -40,4 +40,16 @@
 #endif
 
 
+#define IS_POWER_OF_2(x) ((x != 0) && !(x & (x - 1)))
+
+
+#ifndef ZFEC_SIMD_ALIGNMENT
+#define ZFEC_SIMD_ALIGNMENT 16
+#endif
+
+#if !IS_POWER_OF_2(ZFEC_SIMD_ALIGNMENT)
+#error ZFEC_SIMD_ALIGNMENT is not a positive power of 2
+#endif
+
+
 #endif /* __ZFEC_MACROS_H */

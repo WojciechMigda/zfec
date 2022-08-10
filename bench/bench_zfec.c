@@ -361,15 +361,17 @@ int main(int argc, char **argv)
     size_t const UNITS_PER_SECOND = 1000000000;
     size_t const DATA_SZ = parsed_args.data_sz;
     size_t const fec_sz = (DATA_SZ + parsed_args.k - 1) / parsed_args.k;
-    /* fec_simd_aligned_sz is fec_sz rounded up to FEC_SIMD_ALIGNMENT boundary */
+    /* fec_simd_aligned_sz is fec_sz rounded up to ZFEC_SIMD_ALIGNMENT boundary */
     size_t const fec_simd_aligned_sz = parsed_args.simd ?
-        (fec_sz + FEC_SIMD_ALIGNMENT - 1) & ~(FEC_SIMD_ALIGNMENT - 1) : fec_sz;
+        (fec_sz + ZFEC_SIMD_ALIGNMENT - 1) & ~(ZFEC_SIMD_ALIGNMENT - 1) : fec_sz;
 
     if (parsed_args.quiet == FALSE)
     {
         printf("Built with:\n  STRIDE=%d\n  UNROLL=%d\n", STRIDE, UNROLL);
+        printf("  ZFEC_SIMD_ALIGNMENT=%d\n", ZFEC_SIMD_ALIGNMENT);
         printf("  ZFEC_INTEL_SSSE3_FEATURE=%d\n", ZFEC_INTEL_SSSE3_FEATURE);
         printf("  ZFEC_ARM_NEON_FEATURE=%d\n", ZFEC_ARM_NEON_FEATURE);
+
         printf("Measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
     }
 
@@ -377,12 +379,12 @@ int main(int argc, char **argv)
      * I allocate chunk of memory that will be already padded
      * to a multiple of fec_sz. It will store both input and
      * output blocks, a total of m blocks.
-     * Allocated chunk might not be aligned on FEC_SIMD_ALIGNMENT,
-     * so I need to compensate for this by allocating extra FEC_SIMD_ALIGNMENT - 1 bytes
-     * and then rounding the address up to the FEC_SIMD_ALIGNMENT boundary.
+     * Allocated chunk might not be aligned on ZFEC_SIMD_ALIGNMENT,
+     * so I need to compensate for this by allocating extra ZFEC_SIMD_ALIGNMENT - 1 bytes
+     * and then rounding the address up to the ZFEC_SIMD_ALIGNMENT boundary.
      */
-    gf *unaligned_data_p = calloc(fec_simd_aligned_sz * parsed_args.m + (FEC_SIMD_ALIGNMENT - 1), 1);
-    gf *data_p = (gf *)(((uintptr_t)unaligned_data_p + FEC_SIMD_ALIGNMENT - 1) & ~(FEC_SIMD_ALIGNMENT - 1));
+    gf *unaligned_data_p = calloc(fec_simd_aligned_sz * parsed_args.m + (ZFEC_SIMD_ALIGNMENT - 1), 1);
+    gf *data_p = (gf *)(((uintptr_t)unaligned_data_p + ZFEC_SIMD_ALIGNMENT - 1) & ~(ZFEC_SIMD_ALIGNMENT - 1));
 
     fec_t *fec_p = fec_new(parsed_args.k, parsed_args.m);
 

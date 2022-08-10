@@ -199,8 +199,11 @@ generate_gf (void) {
 #ifndef UNROLL
 #define UNROLL 16               /* 1, 4, 8, 16 */
 #endif
-static void
-_addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz) {
+static
+#if (ZFEC_INLINE_ADDMUL_FEATURE == 1)
+inline
+#endif /* ZFEC_INLINE_ADDMUL_FEATURE */
+void _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz) {
     USE_GF_MULC;
     const gf* lim = &dst[sz - UNROLL + 1];
 
@@ -246,8 +249,11 @@ __m128i mask_to_u128_SSSE3(uint16_t bitmap)
 #define addmul_simd(dst, src, c, sz)                 \
     if (c != 0) _addmul1_simd(dst, src, c, sz)
 
-static void
-_addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
+static
+#if (ZFEC_INLINE_ADDMUL_SIMD_FEATURE == 1)
+inline
+#endif /* ZFEC_INLINE_ADDMUL_SIMD_FEATURE */
+void _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
 {
     dst = ZFEC_ASSUME_ALIGNED(dst, ZFEC_SIMD_ALIGNMENT);
     src = ZFEC_ASSUME_ALIGNED(src, ZFEC_SIMD_ALIGNMENT);

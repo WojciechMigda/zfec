@@ -75,4 +75,26 @@
 #endif
 
 
+#ifndef ZFEC_UNROLL_ADDMUL
+#define ZFEC_UNROLL_ADDMUL 16
+#endif
+
+#ifndef ZFEC_UNROLL_ADDMUL_SIMD
+#define ZFEC_UNROLL_ADDMUL_SIMD 1
+#endif
+
+
+#ifdef ZFEC_INLINE_ADDMUL
+#define ZFEC_INLINE_ADDMUL_FEATURE 1
+#else
+#define ZFEC_INLINE_ADDMUL_FEATURE 0
+#endif
+
+#ifdef ZFEC_INLINE_ADDMUL_SIMD
+#define ZFEC_INLINE_ADDMUL_SIMD_FEATURE 1
+#else
+#define ZFEC_INLINE_ADDMUL_SIMD_FEATURE 0
+#endif
+
+
 #endif /* __ZFEC_MACROS_H */

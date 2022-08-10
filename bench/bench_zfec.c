@@ -371,6 +371,8 @@ int main(int argc, char **argv)
         printf("  ZFEC_SIMD_ALIGNMENT=%d\n", ZFEC_SIMD_ALIGNMENT);
         printf("  ZFEC_INTEL_SSSE3_FEATURE=%d\n", ZFEC_INTEL_SSSE3_FEATURE);
         printf("  ZFEC_ARM_NEON_FEATURE=%d\n", ZFEC_ARM_NEON_FEATURE);
+        printf("  ZFEC_INLINE_ADDMUL_FEATURE=%d\n", ZFEC_INLINE_ADDMUL_FEATURE);
+        printf("  ZFEC_INLINE_ADDMUL_SIMD_FEATURE=%d\n", ZFEC_INLINE_ADDMUL_SIMD_FEATURE);
 
         printf("Measuring encoding of data with K=%hu, M=%hu, reporting results in nanoseconds per byte after encoding %zu bytes %u times in a row...\n", parsed_args.k, parsed_args.m, DATA_SZ, parsed_args.runreps);
     }

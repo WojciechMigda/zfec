@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
@@ -89,9 +88,6 @@ __attribute__ ((aligned (FEC_SIMD_ALIGNMENT)))
 
 #define GF_MULC0(c) __gf_mulc_ = gf_mul_table[c]
 #define GF_ADDMULC(dst, x) dst ^= __gf_mulc_[x]
-
-/* gf_mul_table_16[c][x] = gf_mul_table[c][x << 4] */
-static gf gf_mul_table_16[256][16];
 
 /*
  * Generate GF(2**m) from the irreducible polynomial p(X) in p[0]..p[m]
@@ -266,6 +262,7 @@ _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t 
 #undef OP
     }
 #endif
+#endif
 
 
     lim += UNROLL - 1;
@@ -358,7 +355,6 @@ _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c
         PP_REPEAT(UNROLL, OP)
 #undef OP
     }
-#endif
 #endif
 
     lim += UNROLL - 1;
@@ -762,7 +758,7 @@ fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*
  * See README.rst for licensing information.
  *
  * Modifications by Wojciech Migda (see commits in
- * github.com/WojciechMigda/zfec repository for their scope).
+ * github.com/WojciechMigda/zfec-fast repository for their scope).
  * Modifications (C) 2022 Wojciech Migda (github.com/WojciechMigda)
  */
 

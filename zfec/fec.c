@@ -1,9 +1,9 @@
 /**
- * zfec -- fast forward error correction library with Python interface
+ * zfec-fast -- fast forward error correction library with Python interface
  */
 
 #include "fec.h"
-#include "fec_pp.h"
+#include "zfec_pp.h"
 #include "zfec_macros.h"
 
 #include <stdio.h>
@@ -744,12 +744,13 @@ fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*
 }
 
 /**
- * zfec -- fast forward error correction library with Python interface
+ * zfec-fast -- fast forward error correction library with Python interface
  *
  * Copyright (C) 2007-2010 Zooko Wilcox-O'Hearn
  * Author: Zooko Wilcox-O'Hearn
+ * Copyright (C) 2022 Wojciech Migda
  *
- * This file is part of zfec.
+ * This file is part of zfec-fast.
  *
  * See README.rst for licensing information.
  *

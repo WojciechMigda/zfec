@@ -2,7 +2,7 @@
 #define __FEC_H
 
 /**
- * zfec -- fast forward error correction library with Python interface
+ * zfec-fast -- fast forward error correction library with Python interface
  *
  * See README.rst for documentation.
  */
@@ -72,13 +72,14 @@ void fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts
 #endif
 
 /**
- * zfec -- fast forward error correction library with Python interface
- * 
+ * zfec-fast -- fast forward error correction library with Python interface
+ *
  * Copyright (C) 2007-2008 Allmydata, Inc.
  * Author: Zooko Wilcox-O'Hearn
- * 
- * This file is part of zfec.
- * 
+ * Copyright (C) 2022 Wojciech Migda
+ *
+ * This file is part of zfec-fast.
+ *
  * See README.rst for licensing information.
  */
 

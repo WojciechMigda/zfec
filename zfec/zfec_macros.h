@@ -4,8 +4,6 @@
 /**
  * zfec-fast -- fast forward error correction library with Python interface
  *
- * Copyright (C) 2007-2008 Allmydata, Inc.
- * Author: Zooko Wilcox-O'Hearn
  * Copyright (C) 2022 Wojciech Migda
  *
  * This file is part of zfec-fast.

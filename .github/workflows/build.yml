@@ -81,12 +81,12 @@ jobs:
 
       - name: "Build benchmark tool"
         run: |
-          export CFLAGS="-O3" && make -C bench bench_zfex STRIDE=4096 UNROLL=8
+          export CFLAGS="-O3" && make -C bench bench_zfex ZFEX_STRIDE=4096 UNROLL=8
           echo "::group::Show help"
           bench/bench_zfex -h
           echo "::endgroup::"
           make -C bench clean
-          export CFLAGS="-O3" && make -C bench bench_zfex STRIDE=8192 UNROLL=16
+          export CFLAGS="-O3" && make -C bench bench_zfex ZFEX_STRIDE=8192 UNROLL=16
           echo "::group::Run default benchmark"
           bench/bench_zfex -i 1 -r 1
           echo "::endgroup::"
@@ -97,7 +97,7 @@ jobs:
           bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
           echo "::endgroup::"
           make -C bench clean
-          export CFLAGS="-DZFEX_USE_INTEL_SSSE3 -mssse3 -O3" && make -C bench bench_zfex STRIDE=8192 UNROLL=16
+          export CFLAGS="-DZFEX_USE_INTEL_SSSE3 -mssse3 -O3" && make -C bench bench_zfex ZFEX_STRIDE=8192 UNROLL=16
           echo "::group::Run custom SSSE3 benchmark and show checksums"
           bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
           echo "::endgroup::"

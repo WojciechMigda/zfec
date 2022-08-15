@@ -53,11 +53,11 @@ jobs:
           cpu: cortex-a8
           optimize_image: no
           commands: |
-            make -C bench bench_zfex STRIDE=4096 UNROLL=8
+            make -C bench bench_zfex ZFEX_STRIDE=4096 UNROLL=8
             bench/bench_zfex -i 1 -r 1
             bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
             make -C bench clean
-            CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3" make -C bench bench_zfex
+            CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" make -C bench bench_zfex
             bench/bench_zfex -i 1 -r 1
             bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
             bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A

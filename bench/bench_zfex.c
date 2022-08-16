@@ -450,7 +450,7 @@ int main(int argc, char **argv)
                      &xsum_state);
             }
 
-            printf("Input checksum: %04X\n", xsum);
+            printf("Input xsum: %04X\n", xsum);
         }
     }
 
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
             {
                 for (ix = 0; ix < num_block_nums; ++ix)
                 {
-                    printf("fec[%zu] %04X\n", ix, checksum(fecs_pp[ix], fec_sz, NULL));
+                    printf("fec[%zu] xsum %04X\n", ix, checksum(fecs_pp[ix], fec_sz, NULL));
                 }
             }
         }

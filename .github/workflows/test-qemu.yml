@@ -53,12 +53,31 @@ jobs:
           cpu: cortex-a8
           optimize_image: no
           commands: |
+            ###################
+            Green='\e[0;32m'
+            Red='\e[0;31m'
+            Yellow='\e[0;33m'
+            Cyan='\e[0;36m'
+            Normal='\e[0m' # No Color
+            ###################
+            LE="${Yellow}[LE]${Normal}"
             make -C bench bench_zfex ZFEX_STRIDE=4096 UNROLL=8
+            echo "::group::${LE} Run default benchmark"
             bench/bench_zfex -i 1 -r 1
+            echo "::endgroup::"
+            echo "::group::${LE} Run custom benchmark and show checksums"
             bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+            echo "::endgroup::"
             make -C bench clean
             CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" make -C bench bench_zfex
+            echo "::group::${LE} Run default NEON benchmark"
             bench/bench_zfex -i 1 -r 1
+            echo "::endgroup::"
+            echo "::group::${LE} Run custom NEON benchmark and show checksums"
             bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
+            echo "::endgroup::"
+            echo "::group::${LE} Run custom aligned NEON benchmark and show checksums"
             bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
+            echo "::endgroup::"
             make -C bench clean
+            ###################

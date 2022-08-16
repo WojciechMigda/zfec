@@ -184,7 +184,6 @@ jobs:
           # Resolve 'File already exists' TestPyPi uploading error
           skip_existing: true
 
-
       # Now define a conditional step to upload packages to the production
       # instance of PyPI.
       #

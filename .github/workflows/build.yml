@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - "ubuntu-18.04"
+          - "ubuntu-20.04"
           - "windows-latest"
           - "macos-11"
         wheel-selector:
@@ -167,7 +167,7 @@ jobs:
       #
       # The conditional in this step should cause it to run only for case (3).
       - name: "Publish to TEST PyPI"
-        uses: "pypa/gh-action-pypi-publish@master"
+        uses: "pypa/gh-action-pypi-publish@release/v1"
         if: >-
           github.event_name == 'pull_request'
 
@@ -181,6 +181,8 @@ jobs:
           # Override the default in order to upload it to the testing
           # deployment.
           repository_url: "https://test.pypi.org/legacy/"
+          # Resolve 'File already exists' TestPyPi uploading error
+          skip_existing: true
 
       # Now define a conditional step to upload packages to the production
       # instance of PyPI.
@@ -189,7 +191,7 @@ jobs:
       # instance.  This time, we have a conditional that runs only for case
       # (2).
       - name: "Publish to LIVE PyPI"
-        uses: "pypa/gh-action-pypi-publish@master"
+        uses: "pypa/gh-action-pypi-publish@release/v1"
         if: >-
           github.event_name == 'push' &&
           startsWith(github.event.ref, 'refs/tags/zfex-')

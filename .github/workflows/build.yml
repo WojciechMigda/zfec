@@ -98,9 +98,10 @@ jobs:
           echo "::endgroup::"
           make -C bench clean
           export CFLAGS="-DZFEX_USE_INTEL_SSSE3 -mssse3 -O3" && make -C bench bench_zfex ZFEX_STRIDE=8192 UNROLL=16
-          echo "::group::Run custom SSSE3 benchmark and show checksums"
+          echo "::group::Run custom aligned SSSE3 benchmark and show checksums"
           bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
           echo "::endgroup::"
+          make -C bench clean
         shell: bash
 
       - uses: actions/upload-artifact@v2

@@ -17,6 +17,10 @@
 #include <tmmintrin.h>
 #endif /* ZFEX_INTEL_SSSE3_FEATURE == 1 */
 
+#if (ZFEX_ARM_NEON_FEATURE == 1)
+#include <arm_neon.h>
+#endif /* ZFEX_ARM_NEON_FEATURE */
+
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,
  * and  Lee & Messerschmitt, p. 453.
@@ -246,6 +250,33 @@ __m128i mask_to_u128_SSSE3(uint16_t bitmap)
 }
 #endif /* ZFEX_INTEL_SSSE3_FEATURE == 1 */
 
+#if (ZFEX_ARM_NEON_FEATURE == 1)
+/*
+ * Convert 16-bit mask into uint8x16_t, in which each bit of the
+ * mask [0, 1] is converted into [0, FF] byte.
+ * Based on: Peter Cordes, https://stackoverflow.com/a/67203617/2003487
+ */
+static inline
+uint8x16_t mask_to_u128_NEON(uint16_t bitmap)
+{
+    register uint8x16_t const shuffle = (uint8x16_t)(uint64x2_t){0, 0x0101010101010101};
+    register uint8x16_t const vbitmap = (uint8x16_t)(uint16x8_t){bitmap, 0, 0, 0, 0, 0, 0, 0};
+    register uint8x16_t v;
+
+    __asm__ ("vtbl.8 %e[out], {%q[t]}, %e[x]" : [out]"=w"(v) : [x]"w"(shuffle), [t]"w"(vbitmap));
+    __asm__ ("vtbl.8 %f[out], {%q[t]}, %f[x]" : [out]"+w"(v) : [x]"w"(shuffle), [t]"w"(vbitmap));
+
+    register uint8x16_t const bitselect = {
+        1, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1U << 7,
+        1, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1U << 7};
+
+    v &= bitselect;
+    v = vceqq_u8(v, bitselect);
+
+    return v;
+}
+#endif /* ZFEX_ARM_NEON_FEATURE == 1 */
+
 #define addmul_simd(dst, src, c, sz)                 \
     if (c != 0) _addmul1_simd(dst, src, c, sz)
 
@@ -296,52 +327,47 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
 
 #elif (ZFEX_ARM_NEON_FEATURE == 1) && (UNROLL == 16)
     // Idea from https://botan.randombit.net zfec_vperm.cpp
-
-    USE_GF_MULC;
-    GF_MULC0 (c);
     const gf* lim = &dst[sz - UNROLL + 1];
-    const gf * const gf_mulc_16 = gf_mul_table_16[c];
 
-    /* 
-     * for (; dst < lim; dst += 16, src += 16) {
-     *   // 16x parallel
-     *   for (int i = 0; i < 16; i++) {
-     *     dst[i] ^= __gf_mulc_[src[i] & 0x0f] ^ gf_mulc_16[src[i] >> 4];
-     *   }
-     * }
-     * dst should be aligned to 16 bytes
-     */
-    __asm__(
-        "vmov.i8  q0, #0x0f              \n\t"  // q0 = 0x0f0f...0f
-        "vld1.8   {q3}, [%[gf_mulc]]     \n\t"  // q3 = gf_mulc[0..15]
-        "vld1.8   {q8}, [%[gf_mulc_16]]  \n\t"  // q8 = gf_mulc_16[0..15]
-    "1:                                  \n\t"  //
-        "cmp      %[dst], %[lim]         \n\t"  //
-        "bhs      2f                     \n\t"  // while (dst < lim) {
-        "vld1.8   {q2}, [%[src]]!        \n\t"  //   q2 = src[0..15];  src += 16
-        "vld1.8   {q1}, [%[dst]:128]     \n\t"  //   q1 = dst[0..15]
-        "vand.8   q9, q2, q0             \n\t"  //   q9 = src & 0x0f0f...0f
-        "vtbl.8   d18, {q3}, d18         \n\t"  //
-        "vshr.u8  q10, q2, #4            \n\t"  //   q10 = src >> 4
-        "vtbl.8   d19, {q3}, d19         \n\t"  //   q9 = gf_mulc[q9]
-        "vtbl.8   d20, {q8}, d20         \n\t"  //
-        "vtbl.8   d21, {q8}, d21         \n\t"  //   q10 = gf_mulc_16[q10]
-        "veorq.8  q1, q9                 \n\t"  //
-        "veorq.8  q1, q10                \n\t"  //
-        "vst1.8   {q1}, [%[dst]:128]!    \n\t"  //   dst[0..15] ^= q9 ^ q10;  dst += 16
-        "b        1b                     \n\t"  //
-    "2:                                  \n\t"  // }
-        : [dst]"+r"(dst),
-          [src]"+r"(src)
-        : [lim]       "r"(lim),
-          [gf_mulc]   "r"(__gf_mulc_),
-          [gf_mulc_16]"r"(gf_mulc_16)
-        : "q0", "q1", "q2", "q3", "q8", "q9", "q10", "memory", "cc"
-    );
+    register uint8x16_t q0  = {0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F};
+    register uint8x16_t q3  = vld1q_u8(gf_mul_table[c]);
+    register uint8x16_t q8  = vld1q_u8(gf_mul_table_16[c]);
+
+    for (; dst < lim; dst += UNROLL, src += UNROLL)
+    {
+         register uint8x16_t q2  = vld1q_u8(src);
+         register uint8x16_t q1  = vld1q_u8(dst);
+
+         register uint8x16_t q9  = q2 & q0;
+         register uint8x16_t q10  = q2 >> 4;
+
+        __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q9) : [t]"w"(q3));
+        __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q9) : [t]"w"(q3));
+        __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q10) : [t]"w"(q8));
+        __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q10) : [t]"w"(q8));
+
+        vst1q_u8(dst, q1 ^ q9 ^ q10);
+    }
 
     lim += UNROLL - 1;
-    for (; dst < lim; dst++, src++)       /* final components */
-        GF_ADDMULC (*dst, *src);
+
+    if (dst < lim)
+    {
+         register uint8x16_t q2  = vld1q_u8(src);
+         register uint8x16_t q1  = vld1q_u8(dst);
+
+         register uint8x16_t q9  = q2 & q0;
+         register uint8x16_t q10  = q2 >> 4;
+
+        __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q9) : [t]"w"(q3));
+        __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q9) : [t]"w"(q3));
+        __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q10) : [t]"w"(q8));
+        __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q10) : [t]"w"(q8));
+
+        register uint8x16_t const tail_mask = mask_to_u128_NEON(0xFFFF >> (16 - (lim - dst)));
+
+        vst1q_u8(dst, q1 ^ ((q9 ^ q10) & tail_mask));
+    }
 
 #else /* not ZFEX_INTEL_SSSE3_FEATURE && not ZFEX_ARM_NEON_FEATURE */
 

@@ -27,4 +27,4 @@ ghc-options:     -Wall
 c-sources:       zfex/zfex.c
 cc-options:      -std=c99
 include-dirs:    zfex
-extra-source-files: zfex/zfex.h, zfex/zfex_pp.h, zfex/zfex_macros.h, COPYING.GPL, COPYING.TGPPL.rst
+extra-source-files: zfex/zfex.h, zfex/zfex_pp.h, zfex/zfex_macros.h, zfex/zfex_bytemask.h, COPYING.GPL, COPYING.TGPPL.rst

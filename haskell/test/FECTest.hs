@@ -33,7 +33,7 @@ testFEC k n len seed = FEC.decode fec someTaggedBlocks == origBlocks where
 
 prop_FEC :: Int -> Int -> Int -> Int -> Property
 prop_FEC k n len seed =
-  isValidConfig k n && n < 256 && len < 1024 ==> testFEC k n len seed
+  isValidConfig k n && n < 256 && 0 <= len && len < 1024 ==> testFEC k n len seed
 
 checkDivide :: Int -> IO ()
 checkDivide n = do
@@ -52,6 +52,6 @@ checkEnFEC len = do
      else fail "deFEC failure"
 
 main = do
-  mapM_ (check (defaultConfig { configMaxTest = 1000, configMaxFail = 10000 })) [prop_FEC]
+  quickCheck (withMaxSuccess 10000 prop_FEC)
   mapM_ checkDivide [1, 2, 3, 4, 10]
   mapM_ checkEnFEC [1, 2, 3, 4, 5, 1024 * 1024]

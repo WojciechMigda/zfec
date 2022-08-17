@@ -1,0 +1,50 @@
+name: "Haskell API"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+
+  Haskell_tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
+      - name: "Check out zfex sources"
+        uses: actions/checkout@v3
+        with:
+          # Check out the full history, including tags.  This is necessary to
+          # construct non-release version numbers.
+          fetch-depth: 0
+
+      - name: "Update apt"
+        run: sudo apt-get update -y
+
+      - name: "Install ghc"
+        run: sudo apt-get install -y ghc
+
+      - name: "Install haskell dependencies"
+        run: |
+          cabal v2-update
+          cabal v2-install --lib QuickCheck #--constraint 'QuickCheck < 1.3'
+          cabal v2-install --lib random
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: "Install zfex"
+        run: |
+          pip install .
+          cabal v2-install --lib fec
+
+      - name: "Run haskell tests"
+        run: runhaskell haskell/test/FECTest.hs

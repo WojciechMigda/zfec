@@ -33,7 +33,7 @@ jobs:
       - name: "Install haskell dependencies"
         run: |
           cabal v2-update
-          cabal v2-install --lib QuickCheck #--constraint 'QuickCheck < 1.3'
+          cabal v2-install --lib QuickCheck
           cabal v2-install --lib random
 
       - name: "Set up Python"
@@ -44,7 +44,7 @@ jobs:
       - name: "Install zfex"
         run: |
           pip install .
-          cabal v2-install --lib fec
+          cabal v2-install --lib zfex
 
       - name: "Run haskell tests"
-        run: runhaskell haskell/test/FECTest.hs
+        run: runhaskell haskell/test/ZFEXTest.hs

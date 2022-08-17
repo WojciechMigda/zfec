@@ -7,7 +7,7 @@ Generate redundant blocks of information such that if some of the blocks are
 lost then the original data can be recovered from the remaining blocks. This
 package includes command-line tools, C API, Python API, and Haskell API.
 
-|build| |test-intel| |test-arm| |pypi|
+|build| |test-intel| |test-arm| |haskell-api| |pypi|
 
 Intro and Licence
 -----------------
@@ -343,3 +343,7 @@ Enjoy!
 .. |test-arm| image:: https://github.com/WojciechMigda/zfex/actions/workflows/test-qemu.yml/badge.svg
    :alt: Tests on ARM qemu-emulated environment
    :target: https://github.com/WojciechMigda/zfex/actions/workflows/test-qemu.yml
+
+.. |haskell-api| image:: https://github.com/WojciechMigda/zfex/actions/workflows/haskell-api.yml/badge.svg
+   :alt: Haskell API
+   :target: https://github.com/WojciechMigda/zfex/actions/workflows/haskell-api.yml

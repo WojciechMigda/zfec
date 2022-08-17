@@ -3,7 +3,6 @@ name: "QEMU tests"
 on:
   push:
     branches:
-      - "master"
       - 'main'
       - 'GH[1-9]+[0-9]*-*'
   pull_request:

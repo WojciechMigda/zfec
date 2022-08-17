@@ -6,8 +6,8 @@ name: "Packages"
 on:
   push:
     branches:
-      # Do build on pushes to master.
-      - "master"
+      # Do build on pushes to main.
+      - "main"
 
     tags:
       # Do build on pushes to any release tag See

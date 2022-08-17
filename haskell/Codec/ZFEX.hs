@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
 -- |
--- Module:    Codec.FEC
+-- Module:    Codec.ZFEX
 -- Copyright: Adam Langley
 -- License:   GPLv2+|TGPPLv1+ (see README.rst for details)
 --
@@ -14,7 +14,7 @@
 -- blocks you have in order to tell decode. By convention, the blocks are
 -- numbered 0..(n - 1) and blocks numbered < k are the primary blocks.
 
-module Codec.FEC (
+module Codec.ZFEX (
     FECParams
   , fec
   , encode
@@ -42,24 +42,24 @@ import Foreign.Marshal.Array (withArray, advancePtr)
 import System.IO (withFile, IOMode(..))
 import System.IO.Unsafe (unsafePerformIO)
 
-data CFEC
-data FECParams = FECParams (ForeignPtr CFEC) Int Int
+data CZFEX
+data FECParams = FECParams (ForeignPtr CZFEX) Int Int
 
 instance Show FECParams where
-  show (FECParams _ k n) = "FEC (" ++ show k ++ ", " ++ show n ++ ")"
+  show (FECParams _ k n) = "ZFEX (" ++ show k ++ ", " ++ show n ++ ")"
 
 foreign import ccall unsafe "fec_new" _new :: CUInt  -- ^ k
                                            -> CUInt  -- ^ n
-                                           -> IO (Ptr CFEC)
-foreign import ccall unsafe "&fec_free" _free :: FunPtr (Ptr CFEC -> IO ())
-foreign import ccall unsafe "fec_encode" _encode :: Ptr CFEC
+                                           -> IO (Ptr CZFEX)
+foreign import ccall unsafe "&fec_free" _free :: FunPtr (Ptr CZFEX -> IO ())
+foreign import ccall unsafe "fec_encode" _encode :: Ptr CZFEX
                                                  -> Ptr (Ptr Word8)  -- ^ primary blocks
                                                  -> Ptr (Ptr Word8)  -- ^ (output) secondary blocks
                                                  -> Ptr CUInt  -- ^ array of secondary block ids
                                                  -> CSize  -- ^ length of previous
                                                  -> CSize  -- ^ block length
                                                  -> IO ()
-foreign import ccall unsafe "fec_decode" _decode :: Ptr CFEC
+foreign import ccall unsafe "fec_decode" _decode :: Ptr CZFEX
                                                  -> Ptr (Ptr Word8)  -- ^ input blocks
                                                  -> Ptr (Ptr Word8)  -- ^ output blocks
                                                  -> Ptr CUInt  -- ^ array of input indexes
@@ -127,8 +127,8 @@ encode :: FECParams
        -> [B.ByteString]  -- ^ a list of @k@ input blocks
        -> [B.ByteString]  -- ^ (n - k) output blocks
 encode (FECParams params k n) inblocks
-  | length inblocks /= k = error "Wrong number of blocks to FEC encode"
-  | not (allByteStringsSameLength inblocks) = error "Not all inputs to FEC encode are the same length"
+  | length inblocks /= k = error "Wrong number of blocks to ZFEX encode"
+  | not (allByteStringsSameLength inblocks) = error "Not all inputs to ZFEX encode are the same length"
   | otherwise = unsafePerformIO (do
       let sz = B.length $ head inblocks
       withForeignPtr params (\cfec -> do
@@ -159,10 +159,10 @@ decode :: FECParams
        -> [(Int, B.ByteString)]  -- ^ a list of @k@ blocks and their index
        -> [B.ByteString]  -- ^ a list the @k@ primary blocks
 decode (FECParams params k n) inblocks
-  | length (nub $ map fst inblocks) /= length (inblocks) = error "Duplicate input blocks in FEC decode"
-  | any (\f -> f < 0 || f >= n) $ map fst inblocks = error "Invalid block numbers in FEC decode"
+  | length (nub $ map fst inblocks) /= length (inblocks) = error "Duplicate input blocks in ZFEX decode"
+  | any (\f -> f < 0 || f >= n) $ map fst inblocks = error "Invalid block numbers in ZFEX decode"
   | length inblocks /= k = error "Wrong number of blocks to FEC decode"
-  | not (allByteStringsSameLength $ map snd inblocks) = error "Not all inputs to FEC decode are same length"
+  | not (allByteStringsSameLength $ map snd inblocks) = error "Not all inputs to ZFEX decode are same length"
   | otherwise = unsafePerformIO (do
       let sz = B.length $ snd $ head inblocks
           inblocks' = reorderPrimaryBlocks k inblocks
@@ -209,7 +209,7 @@ secureCombine [a] = a
 secureCombine [a, b] = B.pack $ B.zipWith xor a b
 secureCombine (a : rest) = B.pack $ B.zipWith xor a $ secureCombine rest
 
--- | A utility function which takes an arbitary input and FEC encodes it into a
+-- | A utility function which takes an arbitary input and ZFEX encodes it into a
 --   number of blocks. The order the resulting blocks doesn't matter so long
 --   as you have enough to present to @deFEC@.
 enFEC :: Int  -- ^ the number of blocks required to reconstruct

@@ -1,7 +1,7 @@
 module Main where
 
 import qualified Data.ByteString as B
-import qualified Codec.FEC as FEC
+import qualified Codec.ZFEX as ZFEX
 import System.IO (withFile, IOMode(..))
 import System.Random
 import Data.List (sortBy)
@@ -24,34 +24,34 @@ randomTake seed n values = map snd $ take n sortedValues where
   rnds = randoms gen
   gen = mkStdGen seed
 
-testFEC k n len seed = FEC.decode fec someTaggedBlocks == origBlocks where
+testZFEX k n len seed = ZFEX.decode fec someTaggedBlocks == origBlocks where
   origBlocks = map (\i -> B.replicate len $ fromIntegral i) [0..(k - 1)]
-  fec = FEC.fec k n
-  secondaryBlocks = FEC.encode fec origBlocks
+  fec = ZFEX.fec k n
+  secondaryBlocks = ZFEX.encode fec origBlocks
   taggedBlocks = zip [0..] (origBlocks ++ secondaryBlocks)
   someTaggedBlocks = randomTake seed k taggedBlocks
 
-prop_FEC :: Int -> Int -> Int -> Int -> Property
-prop_FEC k n len seed =
-  isValidConfig k n && n < 256 && 0 <= len && len < 1024 ==> testFEC k n len seed
+prop_ZFEX :: Int -> Int -> Int -> Int -> Property
+prop_ZFEX k n len seed =
+  isValidConfig k n && n < 256 && 0 <= len && len < 1024 ==> testZFEX k n len seed
 
 checkDivide :: Int -> IO ()
 checkDivide n = do
   let input = B.replicate 1024 65
-  parts <- FEC.secureDivide n input
-  if FEC.secureCombine parts == input
+  parts <- ZFEX.secureDivide n input
+  if ZFEX.secureCombine parts == input
      then return ()
      else fail "checkDivide failed"
 
 checkEnFEC :: Int -> IO ()
 checkEnFEC len = do
   testdata <- withFile "/dev/urandom" ReadMode (\handle -> B.hGet handle len)
-  let [a, b, c, d, e] = FEC.enFEC 3 5 testdata
-  if FEC.deFEC 3 5 [b, e, d] == testdata
+  let [a, b, c, d, e] = ZFEX.enFEC 3 5 testdata
+  if ZFEX.deFEC 3 5 [b, e, d] == testdata
      then return ()
      else fail "deFEC failure"
 
 main = do
-  quickCheck (withMaxSuccess 10000 prop_FEC)
+  quickCheck (withMaxSuccess 10000 prop_ZFEX)
   mapM_ checkDivide [1, 2, 3, 4, 10]
   mapM_ checkEnFEC [1, 2, 3, 4, 5, 1024 * 1024]

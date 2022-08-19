@@ -1,10 +1,9 @@
-name: "QEMU tests"
+name: "Tests RasPiOS@Arm+qemu"
 
 on:
   push:
     branches:
       - 'main'
-      - 'GH[1-9]+[0-9]*-*'
   pull_request:
 
 jobs:
@@ -32,7 +31,7 @@ jobs:
             yes | pip install --verbose .[test]
             trial zfex
 
-      - name: "Run unit tests on QEMU (cortex-a8) with ZFEX_USE_ARM_NEON"
+      - name: "Run unit tests on QEMU (cortex-a8), built with ZFEX_USE_ARM_NEON"
         uses: pguyot/arm-runner-action@v2
         with:
           base_image: raspios_lite:latest

@@ -79,7 +79,7 @@ jobs:
 
           - os: "ubuntu-latest"
             cibw:
-              wheel-selector: "cp37*"
+              wheel-selector: "cp36* cp37*"
               skip: "*musllinux*"
               manylinux_image: manylinux2010
               arch: auto64

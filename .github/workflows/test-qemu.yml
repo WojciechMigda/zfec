@@ -8,14 +8,13 @@ on:
 
 jobs:
 
-  test:
+  Python-API-tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
 
     steps:
-
-      - name: Check out zfex sources
+      - name: "Check out zfex sources"
         uses: actions/checkout@v3
 
       - name: "Run unit tests on QEMU (cortex-a8)"
@@ -44,7 +43,16 @@ jobs:
             export CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3" && yes | pip install --verbose .[test]
             trial zfex
 
-      - name: "Build and run benchmark tool on QEMU (cortex-a8)"
+  benchmark-tool-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: "Check out zfex sources"
+        uses: actions/checkout@v3
+
+      - name: "Build and run benchmark tool tests on QEMU (cortex-a8)"
         uses: pguyot/arm-runner-action@v2
         with:
           base_image: raspios_lite:latest
@@ -58,7 +66,8 @@ jobs:
             Cyan='\e[0;36m'
             Normal='\e[0m' # No Color
             ###################
-            LE="${Yellow}[LE]${Normal}"
+            LE="${Yellow}[LE]${Normal}" # Little Endian
+            gcc --version
             ####################################################################
             # Strategy of these tests is to compare checksums extracted from
             # benchmark tool runs outputs obtained from the non-SIMD legacy
@@ -70,15 +79,15 @@ jobs:
             echo "::group::${LE} Build legacy algo benchmark and check that it runs"
             make -C bench bench_zfex
             mv bench/bench_zfex bench/bench_zfec
-            bench/bench_zfec -h
+            bench/bench_zfec -h && bench/bench_zfec -i 1 -r 1
             echo "::endgroup::"
             ####################################################################
             # Step 2. Build SIMD-enabled binary and check that it runs.
             ####################################################################
             echo "::group::${LE} Build SIMD-enabled benchmark and check that it runs"
-            CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" make -C bench bench_zfex
+            export CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" && make -C bench bench_zfex
             make -C bench bench_zfex
-            bench/bench_zfex -h
+            bench/bench_zfex -h && bench/bench_zfex -i 1 -r 1
             echo "::endgroup::"
             ####################################################################
             # Step 3. Run both binaries with the same inputs and compare
@@ -94,25 +103,6 @@ jobs:
             # input data size in steps of 223.
             ####################################################################
             echo "::group::${LE} Run tests"
-            bash -c 'for size in `seq 42816 223 46384`; do echo ${size} ; diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) ; done'
+            bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) ; done'
+            echo "${Green}OK${Normal}"
             echo "::endgroup::"
-            #make -C bench bench_zfex ZFEX_STRIDE=4096 UNROLL=8
-            #echo "::group::${LE} Run default benchmark"
-            #bench/bench_zfex -i 1 -r 1
-            #echo "::endgroup::"
-            #echo "::group::${LE} Run custom benchmark and show checksums"
-            #bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
-            #echo "::endgroup::"
-            #make -C bench clean
-            #CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" make -C bench bench_zfex
-            #echo "::group::${LE} Run default NEON benchmark"
-            #bench/bench_zfex -i 1 -r 1
-            #echo "::endgroup::"
-            #echo "::group::${LE} Run custom NEON benchmark and show checksums"
-            #bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
-            #echo "::endgroup::"
-            #echo "::group::${LE} Run custom aligned NEON benchmark and show checksums"
-            #bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
-            #echo "::endgroup::"
-            #make -C bench clean
-            ###################

@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  Haskell_tests:
+  Haskell-API-tests:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true

@@ -77,36 +77,6 @@ jobs:
         run: |
           python3 -m cibuildwheel --output-dir wheelhouse
 
-      - name: "Set CC=gcc on windows-latest"
-        shell: bash
-        if: runner.os == 'Windows'
-        run: echo "CC=gcc" >> $GITHUB_ENV
-
-      - name: "Build benchmark tool"
-        run: |
-          export CFLAGS="-O3" && make -C bench bench_zfex ZFEX_STRIDE=4096 UNROLL=8
-          echo "::group::Show help"
-          bench/bench_zfex -h
-          echo "::endgroup::"
-          make -C bench clean
-          export CFLAGS="-O3" && make -C bench bench_zfex ZFEX_STRIDE=8192 UNROLL=16
-          echo "::group::Run default benchmark"
-          bench/bench_zfex -i 1 -r 1
-          echo "::endgroup::"
-          echo "::group::Run custom benchmark and show checksums"
-          bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x
-          echo "::endgroup::"
-          echo "::group::Run custom aligned benchmark and show checksums"
-          bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
-          echo "::endgroup::"
-          make -C bench clean
-          export CFLAGS="-DZFEX_USE_INTEL_SSSE3 -mssse3 -O3" && make -C bench bench_zfex ZFEX_STRIDE=8192 UNROLL=16
-          echo "::group::Run custom aligned SSSE3 benchmark and show checksums"
-          bench/bench_zfex -k 223 -m 255 -s 43488 -i 1 -r 1 -p "Bella ciao" -x -A
-          echo "::endgroup::"
-          make -C bench clean
-        shell: bash
-
       - uses: actions/upload-artifact@v3
         name: Upload artifacts
         with:

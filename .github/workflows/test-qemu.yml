@@ -1,4 +1,4 @@
-name: "Tests RasPiOS@Arm+qemu"
+name: "Tests | Arm+qemu"
 
 on:
   push:

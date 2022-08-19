@@ -75,8 +75,8 @@ jobs:
             ####################################################################
             # Strategy of these tests is to compare checksums extracted from
             # benchmark tool runs outputs obtained from the non-SIMD legacy
-            # algorithm binary and the SIMD-enabled aligned memory algorithm
-            # binary.
+            # algorithm binary and the SIMD-enabled memory algorithm
+            # binary, aligned and unaligned.
             ####################################################################
             # Step 1. Build legacy algorithm binary and check that it runs.
             ####################################################################
@@ -107,6 +107,9 @@ jobs:
             # input data size in steps of 223.
             ####################################################################
             echo "::group::Run tests"
+            # unaligned
+            bash -c 'for size in `seq 42816 223 46384`; do diff <( ${ZFEC_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( ${ZFEX_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) ; done'
+            # aligned
             bash -c 'for size in `seq 42816 223 46384`; do diff <( ${ZFEC_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( ${ZFEX_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) ; done'
             echo "OK"
             echo "::endgroup::"

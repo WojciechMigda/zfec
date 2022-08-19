@@ -1,6 +1,13 @@
 # Build sdist+wheel packages using GitHub Actions.  Mostly adopted
 # from https://cibuildwheel.readthedocs.io/en/stable/setup/
 
+# Supported architectures: https://cibuildwheel.readthedocs.io/en/stable/options/
+
+# NOTE:
+# Some cibuildwheel matrix tasks are split, because running 3 separate workers
+# each with two wheels takes for them less time than with 1 worker doing all 3 wheels.
+# Linux task is fast enough to do the whole selection using just a single worker.
+
 name: "Packages"
 
 on:
@@ -29,25 +36,67 @@ env:
 
 jobs:
   build_wheels:
-    name: "${{ matrix.wheel-selector }} wheel on ${{ matrix.os }}"
+    name: "${{ matrix.cibw.wheel-selector }} wheel on ${{ matrix.os }} | ${{ matrix.cibw.arch }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - "ubuntu-latest"
-          - "windows-latest"
-          - "macos-11"
-        wheel-selector:
-          - "cp37-*"
-          - "cp38-*"
-          - "cp39-*"
-          - "cp310-*"
-          - "pp37-*"
-          - "pp38-*"
         include:
           - os: "ubuntu-latest"
-            wheel-selector: "cp36-*"
+            cibw:
+              wheel-selector: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-*"
+              arch: auto64
+
+          - os: "windows-latest"
+            architecture: x64
+            cibw:
+              wheel-selector: "cp37-* cp38-*"
+
+          - os: "windows-latest"
+            architecture: x64
+            cibw:
+              wheel-selector: "cp39-* cp310-*"
+
+          - os: "windows-latest"
+            architecture: x64
+            cibw:
+              wheel-selector: "pp37-* pp38-*"
+
+          - os: "macos-11"
+            cibw:
+              wheel-selector: "cp37-* cp38-*"
+              arch: "x86_64 arm64"
+
+          - os: "macos-11"
+            cibw:
+              wheel-selector: "cp39-* cp310-*"
+              arch: "x86_64 arm64"
+
+          - os: "macos-11"
+            cibw:
+              wheel-selector: "pp37-* pp38-*"
+              arch: "x86_64 arm64"
+
+          - os: "ubuntu-latest"
+            cibw:
+              wheel-selector: "cp37*"
+              skip: "*musllinux*"
+              manylinux_image: manylinux2010
+              arch: auto64
+
+          - os: "ubuntu-latest"
+            cibw:
+              wheel-selector: "cp37* cp38*"
+              skip: "*musllinux*"
+              manylinux_image: manylinux2014
+              arch: aarch64
+
+          - os: "ubuntu-latest"
+            cibw:
+              wheel-selector: "cp39* cp310*"
+              skip: "*musllinux*"
+              manylinux_image: manylinux2014
+              arch: aarch64
 
     steps:
       - name: Check out zfex sources
@@ -62,6 +111,11 @@ jobs:
         with:
           python-version: '3.7'
 
+      - name: register qemu
+        if: contains(matrix.cibw.arch, 'aarch64')
+        run: |
+          docker run --rm --privileged hypriot/qemu-register:v4.2.0
+
       - name: Install cibuildwheel
         run: |
           python3 -m pip install cibuildwheel==2.3.1
@@ -72,7 +126,14 @@ jobs:
           # Configure cibuildwheel to build just some of the total wheels we
           # could build for this architecture.  This yields better parallelism
           # on GitHub Actions execution.
-          CIBW_BUILD: "${{ matrix.wheel-selector }}"
+          MACOSX_DEPLOYMENT_TARGET: "10.9"
+          CIBW_BUILD: "${{ matrix.cibw.wheel-selector }}"
+          CIBW_SKIP: "${{ matrix.cibw.skip || '' }}"
+          CIBW_MANYLINUX_X86_64_IMAGE: "${{ matrix.cibw.manylinux_image }}"
+          CIBW_MANYLINUX_I686_IMAGE: "${{ matrix.cibw.manylinux_image }}"
+          CIBW_MANYLINUX_AARCH64_IMAGE: "${{ matrix.cibw.manylinux_image }}"
+          CIBW_ARCHS_LINUX: "${{ matrix.cibw.arch || 'auto' }}"
+          CIBW_ARCHS_MACOS: "${{ matrix.cibw.arch || 'auto' }}"
 
         run: |
           python3 -m cibuildwheel --output-dir wheelhouse

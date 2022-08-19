@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'GH[1-9]+[0-9]*-*'
   pull_request:
 
 jobs:

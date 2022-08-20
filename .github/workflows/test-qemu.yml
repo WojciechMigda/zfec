@@ -44,68 +44,65 @@ jobs:
             trial zfex
 
   benchmark-tool-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
 
     steps:
-      - name: "Check out zfex sources"
-        uses: actions/checkout@v3
+    - name: "Check out zfex sources"
+      uses: actions/checkout@v3
 
-      - name: "Build and run benchmark tool tests on QEMU (cortex-a8)"
-        uses: pguyot/arm-runner-action@v2
-        with:
-          base_image: raspios_lite:latest
-          cpu: cortex-a8
-          optimize_image: no
-          commands: |
-            ###################
-            Green='\e[0;32m'
-            Red='\e[0;31m'
-            Yellow='\e[0;33m'
-            Cyan='\e[0;36m'
-            Normal='\e[0m' # No Color
-            ###################
-            LE="${Yellow}[LE]${Normal}" # Little Endian
-            gcc --version
-            ####################################################################
-            # Strategy of these tests is to compare checksums extracted from
-            # benchmark tool runs outputs obtained from the non-SIMD legacy
-            # algorithm binary and the SIMD-enabled memory algorithm
-            # binary, aligned and unaligned.
-            ####################################################################
-            # Step 1. Build legacy algorithm binary and check that it runs.
-            ####################################################################
-            echo "::group::${LE} Build legacy algo benchmark and check that it runs"
-            make -C bench bench_zfex
-            mv bench/bench_zfex bench/bench_zfec
-            bench/bench_zfec -h && bench/bench_zfec -i 1 -r 1
-            echo "::endgroup::"
-            ####################################################################
-            # Step 2. Build SIMD-enabled binary and check that it runs.
-            ####################################################################
-            echo "::group::${LE} Build SIMD-enabled benchmark and check that it runs"
-            export CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" && make -C bench bench_zfex
-            make -C bench bench_zfex
-            bench/bench_zfex -h && bench/bench_zfex -i 1 -r 1
-            echo "::endgroup::"
-            ####################################################################
-            # Step 3. Run both binaries with the same inputs and compare
-            #         reported checksums.
-            # Input data is designed to have FEC blocks sizes incrementally
-            # grow in a range. The range starts and ends at two consecutive
-            # alignment boundaries, respectively.
-            # We control FEC block sizes by changing input data size.
-            # For k and m parameters equal 223 and 255, FEC block size of 192
-            # means that input data size needs to equal 192 * 223 = 42816.
-            # The next alignment boundary will be 192 + 16 = 208, which implies
-            # input data size of 208 * 223 = 46384. We will be increasing
-            # input data size in steps of 223.
-            ####################################################################
-            echo "::group::${LE} Run tests"
-            # unaligned
-            bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) ; done'
-            # aligned
-            bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) ; done'
-            echo "${Green}OK${Normal}"
-            echo "::endgroup::"
+    - name: "Update apt"
+      run: sudo apt-get update -y
+
+    - name: "Install qemu-arm"
+      run: sudo apt-get install -y qemu-system-arm qemu-user-static
+
+    - name: "Install gcc cross-compiler"
+      run: sudo apt-get install -y gcc-8-arm-linux-gnueabihf
+
+    - name: "Build and run benchmark tool tests on QEMU (cortex-a8)"
+      run: |
+        export CC=arm-linux-gnueabihf-gcc-8
+        ${CC} --version
+        ####################################################################
+        # Strategy of these tests is to compare checksums extracted from
+        # benchmark tool runs outputs obtained from the non-SIMD legacy
+        # algorithm binary and the SIMD-enabled memory algorithm
+        # binary, aligned and unaligned.
+        ####################################################################
+        # Step 1. Build legacy algorithm binary and check that it runs.
+        ####################################################################
+        echo "::group::Build legacy algo benchmark and check that it runs"
+        export CFLAGS="-O3 -static" && make -C bench bench_zfex
+        mv bench/bench_zfex bench/bench_zfec
+        bench/bench_zfec -h && bench/bench_zfec -i 1 -r 1
+        echo "::endgroup::"
+        ####################################################################
+        # Step 2. Build SIMD-enabled binary and check that it runs.
+        ####################################################################
+        echo "::group::Build SIMD-enabled benchmark and check that it runs"
+        export CFLAGS="-DZFEX_USE_ARM_NEON -mcpu=cortex-a8 -mfpu=neon -O3 -static" && make -C bench bench_zfex
+        make -C bench bench_zfex
+        bench/bench_zfex -h && bench/bench_zfex -i 1 -r 1
+        echo "::endgroup::"
+        ####################################################################
+        # Step 3. Run both binaries with the same inputs and compare
+        #         reported checksums.
+        # Input data is designed to have FEC blocks sizes incrementally
+        # grow in a range. The range starts and ends at two consecutive
+        # alignment boundaries, respectively.
+        # We control FEC block sizes by changing input data size.
+        # For k and m parameters equal 223 and 255, FEC block size of 192
+        # means that input data size needs to equal 192 * 223 = 42816.
+        # The next alignment boundary will be 192 + 16 = 208, which implies
+        # input data size of 208 * 223 = 46384. We will be increasing
+        # input data size in steps of 223.
+        ####################################################################
+        echo "::group::Run tests"
+        # unaligned
+        bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) ; done'
+        # aligned
+        bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) ; done'
+        echo "OK"
+        echo "::endgroup::"

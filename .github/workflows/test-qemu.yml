@@ -130,6 +130,28 @@ jobs:
         echo "OK"
         echo "::endgroup::"
 
+        ####################################################################
+        # Step 2c. Build SIMD-enabled binary and check that it runs.
+        #          ZFEX_UNROLL_ADDMUL_SIMD = 3
+        ####################################################################
+        echo "::group::Build SIMD-enabled benchmark and check that it runs. ZFEX_UNROLL_ADDMUL_SIMD = 3"
+        export CFLAGS="-DZFEX_USE_ARM_NEON -DZFEX_UNROLL_ADDMUL_SIMD=3 -mcpu=cortex-a8 -mfpu=neon -O3 -static" && make -C bench bench_zfex
+        make -C bench clean || true
+        make -C bench bench_zfex
+        bench/bench_zfex -h && bench/bench_zfex -i 1 -r 1
+        echo "::endgroup::"
+        ####################################################################
+        # Step 3c. Run both binaries with the same inputs and compare
+        #          reported checksums.
+        ####################################################################
+        echo "::group::Run tests"
+        # unaligned
+        bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) || exit 1 ; done'
+        # aligned
+        bash -c 'for size in `seq 42816 223 46384`; do diff <( bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) || exit 1 ; done'
+        echo "OK"
+        echo "::endgroup::"
+
   benchmark-tool-tests-BE:
     runs-on: ubuntu-20.04
     strategy:
@@ -210,6 +232,28 @@ jobs:
         echo "::endgroup::"
         ####################################################################
         # Step 3b. Run both binaries with the same inputs and compare
+        #          reported checksums.
+        ####################################################################
+        echo "::group::Run tests"
+        # unaligned
+        bash -c 'for size in `seq 42816 223 46384`; do diff <( qemu-armeb-static bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( qemu-armeb-static bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) || exit 1 ; done'
+        # aligned
+        bash -c 'for size in `seq 42816 223 46384`; do diff <( qemu-armeb-static bench/bench_zfec -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( qemu-armeb-static bench/bench_zfex -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) || exit 1 ; done'
+        echo "OK"
+        echo "::endgroup::"
+
+        ####################################################################
+        # Step 2c. Build SIMD-enabled binary and check that it runs.
+        #          ZFEX_UNROLL_ADDMUL_SIMD = 3
+        ####################################################################
+        echo "::group::Build SIMD-enabled benchmark and check that it runs. ZFEX_UNROLL_ADDMUL_SIMD = 3"
+        export CFLAGS="-DZFEX_USE_ARM_NEON -DZFEX_UNROLL_ADDMUL_SIMD=3 -mcpu=cortex-a8 -mfpu=neon -O3 -static" && make -C bench bench_zfex
+        make -C bench clean || true
+        make -C bench bench_zfex
+        qemu-armeb-static bench/bench_zfex -h && qemu-armeb-static bench/bench_zfex -i 1 -r 1
+        echo "::endgroup::"
+        ####################################################################
+        # Step 3c. Run both binaries with the same inputs and compare
         #          reported checksums.
         ####################################################################
         echo "::group::Run tests"

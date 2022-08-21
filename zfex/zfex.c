@@ -191,6 +191,33 @@ generate_gf (void) {
  * Various linear algebra operations that i use often.
  */
 
+#if (ZFEX_ARM_NEON_FEATURE == 1)
+static inline
+void addmul_neon_kernel(
+    uint8_t *dst,
+    uint8_t const *src,
+    uint8x16_t const mul_table_c,
+    uint8x16_t const mul_table_16_c,
+    uint8x16_t const mask_0F)
+{
+    dst = ZFEX_ASSUME_ALIGNED(dst, ZFEX_SIMD_ALIGNMENT);
+    src = ZFEX_ASSUME_ALIGNED(src, ZFEX_SIMD_ALIGNMENT);
+
+    register uint8x16_t q2  = vld1q_u8(src);
+    register uint8x16_t q1  = vld1q_u8(dst);
+
+    register uint8x16_t q9  = q2 & mask_0F;
+    register uint8x16_t q10  = q2 >> 4;
+
+    __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q9) : [t]"w"(mul_table_c));
+    __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q9) : [t]"w"(mul_table_c));
+    __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q10) : [t]"w"(mul_table_16_c));
+    __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q10) : [t]"w"(mul_table_16_c));
+
+    vst1q_u8(dst, q1 ^ q9 ^ q10);
+}
+#endif /* (ZFEX_ARM_NEON_FEATURE == 1) */
+
 /*
  * addmul() computes dst[] = dst[] + c * src[]
  * This is used often, so better optimize it! Currently the loop is
@@ -281,41 +308,44 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
         _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
     }
 
-#elif (ZFEX_ARM_NEON_FEATURE == 1) && (ZFEX_UNROLL_ADDMUL_SIMD == 1)
+#elif (ZFEX_ARM_NEON_FEATURE == 1) //&& (ZFEX_UNROLL_ADDMUL_SIMD == 1)
     enum { ZFEX_UNROLL_ADDMUL_UNIT = sizeof (uint8x16_t) };
+    enum { ZFEX_UNROLL_ADDMUL_TILE_1 = ZFEX_UNROLL_ADDMUL_UNIT };
     enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL_SIMD) };
 
-    const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];
+    const gf* lim = &dst[sz];
 
     register uint8x16_t q0  = {0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F};
     register uint8x16_t q3  = vld1q_u8(gf_mul_table[c]);
     register uint8x16_t q8  = vld1q_u8(gf_mul_table_16[c]);
 
+#if (ZFEX_UNROLL_ADDMUL_SIMD > 1)
+    lim -= ZFEX_UNROLL_ADDMUL_TILE - 1;
     for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
     {
-         register uint8x16_t q2  = vld1q_u8(src);
-         register uint8x16_t q1  = vld1q_u8(dst);
-
-         register uint8x16_t q9  = q2 & q0;
-         register uint8x16_t q10  = q2 >> 4;
-
-        __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q9) : [t]"w"(q3));
-        __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q9) : [t]"w"(q3));
-        __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q10) : [t]"w"(q8));
-        __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q10) : [t]"w"(q8));
-
-        vst1q_u8(dst, q1 ^ q9 ^ q10);
+#define KERNEL(i) addmul_neon_kernel(dst + i * ZFEX_UNROLL_ADDMUL_UNIT, src + i * ZFEX_UNROLL_ADDMUL_UNIT, q3, q8, q0);
+        PP_REPEAT(ZFEX_UNROLL_ADDMUL_SIMD, KERNEL)
+#undef KERNEL
     }
 
     lim += ZFEX_UNROLL_ADDMUL_TILE - 1;
+#endif /* (ZFEX_UNROLL_ADDMUL_SIMD > 1) */
+
+    lim -= ZFEX_UNROLL_ADDMUL_TILE_1 - 1;
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE_1, src += ZFEX_UNROLL_ADDMUL_TILE_1)
+    {
+        addmul_neon_kernel(dst, src, q3, q8, q0);
+    }
+
+    lim += ZFEX_UNROLL_ADDMUL_TILE_1 - 1;
 
     if (dst < lim)
     {
-         register uint8x16_t q2 = vld1q_u8(src);
-         register uint8x16_t q1 = vld1q_u8(dst);
+        register uint8x16_t q2 = vld1q_u8(src);
+        register uint8x16_t q1 = vld1q_u8(dst);
 
-         register uint8x16_t q9 = q2 & q0;
-         register uint8x16_t q10 = q2 >> 4;
+        register uint8x16_t q9 = q2 & q0;
+        register uint8x16_t q10 = q2 >> 4;
 
         __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q9) : [t]"w"(q3));
         __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q9) : [t]"w"(q3));

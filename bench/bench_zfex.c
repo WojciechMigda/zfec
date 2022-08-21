@@ -297,7 +297,7 @@ uint16_t checksum(uint8_t const *data, size_t len, checksum_state_t *state_p)
 {
     uint32_t c0 = 0;
     uint32_t c1 = 0;
-    
+
     /* if no external state is passed then use local state */
     uint32_t *c0_p = state_p ? &state_p->c0 : &c0;
     uint32_t *c1_p = state_p ? &state_p->c1 : &c1;

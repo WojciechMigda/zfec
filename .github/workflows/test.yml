@@ -108,8 +108,8 @@ jobs:
             ####################################################################
             echo "::group::Run tests"
             # unaligned
-            bash -c 'for size in `seq 42816 223 46384`; do diff <( ${ZFEC_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( ${ZFEX_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) ; done'
+            bash -c 'for size in `seq 42816 223 46384`; do diff <( ${ZFEC_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( ${ZFEX_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) || exit 1 ; done'
             # aligned
-            bash -c 'for size in `seq 42816 223 46384`; do diff <( ${ZFEC_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( ${ZFEX_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) ; done'
+            bash -c 'for size in `seq 42816 223 46384`; do diff <( ${ZFEC_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x | grep xsum ) <( ${ZFEX_EXE} -k 223 -m 255 -s ${size} -i 1 -r 1 -p "Zażółć gęślą jaźń" -x -A | grep xsum ) || exit 1 ; done'
             echo "OK"
             echo "::endgroup::"

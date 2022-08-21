@@ -305,18 +305,37 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
 
     if (dst < lim)
     {
-         register uint8x16_t q2  = vld1q_u8(src);
-         register uint8x16_t q1  = vld1q_u8(dst);
+         register uint8x16_t q2 = vld1q_u8(src);
+         register uint8x16_t q1 = vld1q_u8(dst);
 
-         register uint8x16_t q9  = q2 & q0;
-         register uint8x16_t q10  = q2 >> 4;
+         register uint8x16_t q9 = q2 & q0;
+         register uint8x16_t q10 = q2 >> 4;
 
         __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q9) : [t]"w"(q3));
         __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q9) : [t]"w"(q3));
         __asm__ ("vtbl.8 %e[x], {%q[t]}, %e[x]" : [x]"+w"(q10) : [t]"w"(q8));
         __asm__ ("vtbl.8 %f[x], {%q[t]}, %f[x]" : [x]"+w"(q10) : [t]"w"(q8));
 
-        register uint8x16_t const tail_mask = mask_to_u128_NEON(0xFFFF >> (16 - (lim - dst)));
+#if (ZFEX_IS_LITTLE_ENDIAN == 1)
+        uint16_t const bitmask = 0xFFFF >> (16 - (lim - dst));
+        register uint8x16_t const tail_mask = mask_to_u128_NEON(bitmask);
+#else
+        /*
+         * On big endian ARM we need to take care of two things:
+         * 1. Loads with vld1q are always executed into a pair of dN registers.
+         *    Their order is always the same and endianness only matters within
+         *    each of them. As a result, we need to swap higher and lower part
+         *    of the mask (since the bitmask is 16-bit byteswap is needed).
+         * 2. Endianness means that to generate the mask we need to shift in
+         *    the opposite direction.
+         * TODO: at some point it would be interesting checking how does simple
+         * LUT would perform to get the bytemask we need.
+         */
+        uint16_t const bitmask = 0xFFFF << (16 - (lim - dst));
+        register uint8x16_t const tail_mask = mask_to_u128_NEON(
+            (bitmask << 8) | (bitmask >> 8)
+        );
+#endif
 
         vst1q_u8(dst, q1 ^ ((q9 ^ q10) & tail_mask));
     }

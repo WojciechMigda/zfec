@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 
     if (parsed_args.quiet == FALSE)
     {
-        printf("Built with:\n  ZFEX_STRIDE=%d\n  UNROLL=%d\n", ZFEX_STRIDE, UNROLL);
+        printf("Built with:\n  ZFEX_STRIDE=%d\n  ZFEX_UNROLL_ADDMUL=%d\n", ZFEX_STRIDE, ZFEX_UNROLL_ADDMUL);
         printf("  ZFEX_SIMD_ALIGNMENT=%d\n", ZFEX_SIMD_ALIGNMENT);
         printf("  ZFEX_INTEL_SSSE3_FEATURE=%d\n", ZFEX_INTEL_SSSE3_FEATURE);
         printf("  ZFEX_ARM_NEON_FEATURE=%d\n", ZFEX_ARM_NEON_FEATURE);

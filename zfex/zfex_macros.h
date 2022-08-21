@@ -97,4 +97,27 @@
 #endif
 
 
+#if (defined __GNUC__)
+  #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+    #define ZFEX_IS_BIG_ENDIAN 0
+    #define ZFEX_IS_LITTLE_ENDIAN 1
+  #elif (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+    #define ZFEX_IS_BIG_ENDIAN 1
+    #define ZFEX_IS_LITTLE_ENDIAN 0
+  #else
+    // __ORDER_PDP_ENDIAN__
+    #error Endianness other than Little and Big is not supported
+  #endif
+#elif (defined _MSC_VER)
+  /* MSVC is always little endian, even ARM one
+   * https://docs.microsoft.com/en-us/cpp/build/overview-of-arm-abi-conventions?view=msvc-170#endianness
+   */
+  #define ZFEX_IS_BIG_ENDIAN 0
+  #define ZFEX_IS_LITTLE_ENDIAN 1
+#else
+  /* Raise an issue for your platform */
+  #error Unknown endianness
+#endif
+
+
 #endif /* __ZFEX_MACROS_H */

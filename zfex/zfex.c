@@ -243,16 +243,18 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
     dst = ZFEX_ASSUME_ALIGNED(dst, ZFEX_SIMD_ALIGNMENT);
     src = ZFEX_ASSUME_ALIGNED(src, ZFEX_SIMD_ALIGNMENT);
 
-#if (ZFEX_INTEL_SSSE3_FEATURE == 1) && (UNROLL == 16)
+#if (ZFEX_INTEL_SSSE3_FEATURE == 1) && (ZFEX_UNROLL_ADDMUL_SIMD == 1)
+    enum { ZFEX_UNROLL_ADDMUL_UNIT = sizeof (__m128i) };
+    enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL_SIMD) };
 
-    const gf* lim = &dst[sz - UNROLL + 1];
+    const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];
 
     register __m128i const vmul_lo = _mm_load_si128((__m128i const *)gf_mul_table[c]);
     register __m128i const vmul_hi = _mm_load_si128((__m128i const *)gf_mul_table_16[c]);
 
     register __v16qu const mask0F = (__v16qu)_mm_set1_epi8(0x0F);
 
-    for (; dst < lim; dst += UNROLL, src += UNROLL)
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
     {
         register __v16qu const vsrc = (__v16qu)_mm_load_si128((__m128i const *)src);
         register __v16qu const vsrc_lo = vsrc & mask0F;
@@ -263,7 +265,7 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
         _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
     }
 
-    lim += UNROLL - 1;
+    lim += ZFEX_UNROLL_ADDMUL_TILE - 1;
 
     if (dst < lim)
     {
@@ -279,15 +281,17 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
         _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
     }
 
-#elif (ZFEX_ARM_NEON_FEATURE == 1) && (UNROLL == 16)
-    // Idea from https://botan.randombit.net zfec_vperm.cpp
-    const gf* lim = &dst[sz - UNROLL + 1];
+#elif (ZFEX_ARM_NEON_FEATURE == 1) && (ZFEX_UNROLL_ADDMUL_SIMD == 1)
+    enum { ZFEX_UNROLL_ADDMUL_UNIT = sizeof (uint8x16_t) };
+    enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL_SIMD) };
+
+    const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];
 
     register uint8x16_t q0  = {0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F};
     register uint8x16_t q3  = vld1q_u8(gf_mul_table[c]);
     register uint8x16_t q8  = vld1q_u8(gf_mul_table_16[c]);
 
-    for (; dst < lim; dst += UNROLL, src += UNROLL)
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
     {
          register uint8x16_t q2  = vld1q_u8(src);
          register uint8x16_t q1  = vld1q_u8(dst);
@@ -303,7 +307,7 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
         vst1q_u8(dst, q1 ^ q9 ^ q10);
     }
 
-    lim += UNROLL - 1;
+    lim += ZFEX_UNROLL_ADDMUL_TILE - 1;
 
     if (dst < lim)
     {

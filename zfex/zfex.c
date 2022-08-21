@@ -201,32 +201,30 @@ generate_gf (void) {
 #define addmul(dst, src, c, sz)                 \
     if (c != 0) _addmul1(dst, src, c, sz)
 
-#ifndef UNROLL
-#define UNROLL 16               /* 1, 4, 8, 16 */
-#endif
 static
 #if (ZFEX_INLINE_ADDMUL_FEATURE == 1)
 inline
 #endif /* ZFEX_INLINE_ADDMUL_FEATURE */
 void _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz) {
     USE_GF_MULC;
-    const gf* lim = &dst[sz - UNROLL + 1];
+    const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];
 
     GF_MULC0 (c);
 
-
-#if (UNROLL > 1)                /* unrolling by 8/16 is quite effective on the pentium */
-    for (; dst < lim; dst += UNROLL, src += UNROLL) {
+#if (ZFEX_UNROLL_ADDMUL > 1)
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
+    {
 #define OP(i) GF_ADDMULC (dst[i], src[i]);
-        PP_REPEAT(UNROLL, OP)
+        PP_REPEAT(ZFEX_UNROLL_ADDMUL, OP)
 #undef OP
     }
 #endif
 
-
-    lim += UNROLL - 1;
+    lim += ZFEX_UNROLL_ADDMUL_TILE - 1;
     for (; dst < lim; dst++, src++)       /* final components */
+    {
         GF_ADDMULC (*dst, *src);
+    }
 }
 
 #define addmul_simd(dst, src, c, sz)                 \
@@ -343,22 +341,24 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
 #else /* not ZFEX_INTEL_SSSE3_FEATURE && not ZFEX_ARM_NEON_FEATURE */
 
     USE_GF_MULC;
-    const gf* lim = &dst[sz - UNROLL + 1];
+    const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];
 
     GF_MULC0 (c);
 
-
-#if (UNROLL > 1)
-    for (; dst < lim; dst += UNROLL, src += UNROLL) {
+#if (ZFEX_UNROLL_ADDMUL > 1)
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
+    {
 #define OP(i) GF_ADDMULC (dst[i], src[i]);
-        PP_REPEAT(UNROLL, OP)
+        PP_REPEAT(ZFEX_UNROLL_ADDMUL, OP)
 #undef OP
     }
 #endif
 
-    lim += UNROLL - 1;
+    lim += ZFEX_UNROLL_ADDMUL_TILE - 1;
     for (; dst < lim; dst++, src++)       /* final components */
+    {
         GF_ADDMULC (*dst, *src);
+    }
 #endif
 }
 

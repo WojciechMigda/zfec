@@ -205,7 +205,11 @@ static
 #if (ZFEX_INLINE_ADDMUL_FEATURE == 1)
 inline
 #endif /* ZFEX_INLINE_ADDMUL_FEATURE */
-void _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz) {
+void _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz)
+{
+    enum { ZFEX_UNROLL_ADDMUL_UNIT = 1 };
+    enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL) };
+
     USE_GF_MULC;
     const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];
 
@@ -339,6 +343,8 @@ void _addmul1_simd(register gf * restrict dst, register const gf * restrict src,
     }
 
 #else /* not ZFEX_INTEL_SSSE3_FEATURE && not ZFEX_ARM_NEON_FEATURE */
+    enum { ZFEX_UNROLL_ADDMUL_UNIT = 1 };
+    enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL) };
 
     USE_GF_MULC;
     const gf* lim = &dst[sz - ZFEX_UNROLL_ADDMUL_TILE + 1];

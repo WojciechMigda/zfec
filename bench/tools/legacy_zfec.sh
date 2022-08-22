@@ -23,7 +23,7 @@ STRIDE := 8192
 UNROLL := 16
 
 bench_zfec: bench_zfec.c ../zfec/fec.c ../zfec/fec.h
-	${CC} ${CFLAGS} -fno-strict-aliasing -Wall -Werror -Wshadow -Wdate-time -Wformat -Werror=format-security -std=c99 -DSTRIDE=$(STRIDE) -DZFEX_STRIDE=$(STRIDE) -DUNROLL=$(UNROLL) -o bench_zfec bench_zfec.c ../zfec/fec.c  -I../zfec
+	${CC} ${CFLAGS} -fno-strict-aliasing -Wall -Werror -Wshadow -Wdate-time -Wformat -Werror=format-security -std=c99 -DSTRIDE=$(STRIDE) -DZFEX_STRIDE=$(STRIDE) -DZFEX_UNROLL_ADDMUL=$(UNROLL) -DZFEX_UNROLL_ADDMUL_SIMD=1 -o bench_zfec bench_zfec.c ../zfec/fec.c  -I../zfec
 
 clean:
 	rm bench_zfec > /dev/null 2>&1 || true

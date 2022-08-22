@@ -20,7 +20,7 @@
 
 #if (ZFEX_ARM_NEON_FEATURE == 1)
 #include <arm_neon.h>
-#endif /* ZFEX_ARM_NEON_FEATURE */
+#endif /* ZFEX_ARM_NEON_FEATURE == 1 */
 
 /*
  * Primitive polynomials - see Lin & Costello, Appendix A,

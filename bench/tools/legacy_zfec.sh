@@ -7,13 +7,17 @@ set -e
 ### tool with different sets of compiler flags. Then, built executable will be
 ### run with different arguments to measure legacy algorithm's performance.
 ###
+### Use CC environment variable to set a non-default compiler.
+###
 ################################################################################
 
 
 # cheat sheet: https://en.wikichip.org/wiki/intel/cpuid
 lscpu
 
-git clone --depth 1 https://github.com/tahoe-lafs/zfec
+wget https://github.com/tahoe-lafs/zfec/archive/refs/heads/master.zip -O zfec.zip
+unzip zfec.zip
+mv zfec-master zfec
 ln -sf fec.h zfec/zfec/zfex.h && touch zfec/zfec/zfex_macros.h zfec/zfec/zfex_pp.h
 
 wget https://raw.githubusercontent.com/WojciechMigda/zfex/main/bench/bench_zfex.c -O zfec/bench/bench_zfec.c
@@ -26,7 +30,7 @@ bench_zfec: bench_zfec.c ../zfec/fec.c ../zfec/fec.h
 	${CC} ${CFLAGS} -fno-strict-aliasing -Wall -Werror -Wshadow -Wdate-time -Wformat -Werror=format-security -std=c99 -DSTRIDE=$(STRIDE) -DZFEX_STRIDE=$(STRIDE) -DZFEX_UNROLL_ADDMUL=$(UNROLL) -DZFEX_UNROLL_ADDMUL_SIMD=1 -o bench_zfec bench_zfec.c ../zfec/fec.c  -I../zfec
 
 clean:
-	rm bench_zfec > /dev/null 2>&1 || true
+	- rm bench_zfec
 EOF
 
 

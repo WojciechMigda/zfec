@@ -7,7 +7,7 @@ Generate redundant blocks of information such that if some of the blocks are
 lost then the original data can be recovered from the remaining blocks. This
 package includes command-line tools, C API, Python API, and Haskell API.
 
-|build| |test-intel| |test-arm| |haskell-api| |pypi|
+|build| |test-intel| |test-arm| |haskell-api| |tools| |pypi|
 
 Intro and Licence
 -----------------
@@ -347,3 +347,7 @@ Enjoy!
 .. |haskell-api| image:: https://github.com/WojciechMigda/zfex/actions/workflows/haskell-api.yml/badge.svg
    :alt: Haskell API
    :target: https://github.com/WojciechMigda/zfex/actions/workflows/haskell-api.yml
+
+.. |tools| image:: https://github.com/WojciechMigda/zfex/actions/workflows/tools.yml/badge.svg
+   :alt: Tools
+   :target: https://github.com/WojciechMigda/zfex/actions/workflows/tools.yml

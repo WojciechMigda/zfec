@@ -1,0 +1,29 @@
+name: "Tools"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+
+  benchmark-tool-helpers:
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+    steps:
+      - name: "Check out zfex sources"
+        uses: actions/checkout@v3
+
+      - name: "Run legacy_zfec.sh"
+        run: |
+          pushd bench/tools
+          ./legacy_zfec.sh
+          popd
+
+      - name: "Run zfex.sh"
+        run: |
+          pushd bench/tools
+          ./zfex.sh
+          popd

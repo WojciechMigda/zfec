@@ -75,8 +75,8 @@ jobs:
             ####################################################################
             # Strategy of these tests is to compare checksums extracted from
             # benchmark tool runs outputs obtained from the non-SIMD legacy
-            # algorithm binary and the SIMD-enabled memory algorithm
-            # binary, aligned and unaligned.
+            # algorithm binary and the SIMD-enabled algorithm binary, aligned
+            # and unaligned memory.
             ####################################################################
             # Step 1. Build legacy algorithm binary and check that it runs.
             ####################################################################

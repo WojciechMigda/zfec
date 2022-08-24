@@ -1,13 +1,14 @@
 
-
-zfex -- efficient, portable erasure coding tool
-===============================================
+zfex — efficient, portable erasure coding tool
+================================================
 
 Generate redundant blocks of information such that if some of the blocks are
 lost then the original data can be recovered from the remaining blocks. This
 package includes command-line tools, C API, Python API, and Haskell API.
 
 |build| |test-intel| |test-arm| |haskell-api| |tools| |pypi|
+
+|intel-benchmark|
 
 Intro and Licence
 -----------------
@@ -351,3 +352,7 @@ Enjoy!
 .. |tools| image:: https://github.com/WojciechMigda/zfex/actions/workflows/tools.yml/badge.svg
    :alt: Tools
    :target: https://github.com/WojciechMigda/zfex/actions/workflows/tools.yml
+
+.. |intel-benchmark| image:: bench/images/bench_intel_k7_m10_1M.png
+   :alt: Intel benchmark chart
+   :target: bench/Results.rst

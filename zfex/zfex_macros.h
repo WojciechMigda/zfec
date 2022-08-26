@@ -11,6 +11,12 @@
  * See README.rst for licensing information.
  */
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+
 #if ((defined __arm__) || (defined __arm) || (defined _ARM) || (defined _M_ARM))
 #define ZFEX_HAS_ARM 1
 #else
@@ -117,6 +123,11 @@
 #else
   /* Raise an issue for your platform */
   #error Unknown endianness
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 

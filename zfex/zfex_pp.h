@@ -11,6 +11,12 @@
  * See README.rst for licensing information.
  */
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+
 #define PP_EXPAND(...) __VA_ARGS__
 
 #define PP_REPEAT_2(ss) ss(0) ss(1)
@@ -87,6 +93,11 @@
 #define PP_REPEAT__(N, X) PP_EXPAND(PP_REPEAT_ ## N)(X)
 #define PP_REPEAT_(N, X) PP_REPEAT__(N, X)
 #define PP_REPEAT(N, X) PP_REPEAT_(PP_EXPAND(N), X)
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* __ZFEX_PP_H */

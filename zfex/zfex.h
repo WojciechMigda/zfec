@@ -9,6 +9,24 @@
 
 #include <stddef.h>
 
+#if defined(_MSC_VER)
+#define alloca _alloca
+#else
+#ifdef __GNUC__
+#ifndef alloca
+#define alloca(x) __builtin_alloca(x)
+#endif
+#else
+#include <alloca.h>
+#endif
+#endif
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 
 typedef unsigned char gf;
 
@@ -58,18 +76,6 @@ int fec_encode_simd(const fec_t* code, const gf*restrict const*restrict const in
  * @param sz size of a packet in bytes
  */
 void fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*restrict const*restrict const outpkts, const unsigned*restrict const index, size_t sz);
-
-#if defined(_MSC_VER)
-#define alloca _alloca
-#else
-#ifdef __GNUC__
-#ifndef alloca
-#define alloca(x) __builtin_alloca(x)
-#endif
-#else
-#include <alloca.h>
-#endif
-#endif
 
 /**
  * zfex -- fast forward error correction library with Python interface
@@ -124,5 +130,11 @@ void fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* __ZFEX_H */

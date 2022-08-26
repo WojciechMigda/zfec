@@ -25,6 +25,12 @@
 #endif /* ZFEX_ARM_NEON_FEATURE */
 
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+
 #if (ZFEX_INTEL_SSSE3_FEATURE == 1)
 /*
  * Convert 16-bit mask into __v16qu, in which each bit of the
@@ -74,6 +80,11 @@ uint8x16_t mask_to_u128_NEON(uint16_t const bitmap)
     return v;
 }
 #endif /* ZFEX_ARM_NEON_FEATURE == 1 */
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* __ZFEX_BYTEMASK_H */

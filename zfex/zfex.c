@@ -254,7 +254,7 @@ static
 #if (ZFEX_INLINE_ADDMUL_FEATURE == 1)
 inline
 #endif /* ZFEX_INLINE_ADDMUL_FEATURE */
-void _addmul1(register gf*restrict dst, register const gf*restrict src, gf c, size_t sz)
+void _addmul1(register gf* ZFEX_RESTRICT dst, register const gf* ZFEX_RESTRICT src, gf c, size_t sz)
 {
     enum { ZFEX_UNROLL_ADDMUL_UNIT = 1 };
     enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL) };
@@ -287,7 +287,7 @@ static
 #if (ZFEX_INLINE_ADDMUL_SIMD_FEATURE == 1)
 inline
 #endif /* ZFEX_INLINE_ADDMUL_SIMD_FEATURE */
-void _addmul1_simd(register gf * restrict dst, register const gf * restrict src, gf c, size_t sz)
+void _addmul1_simd(register gf * ZFEX_RESTRICT dst, register const gf * ZFEX_RESTRICT src, gf c, size_t sz)
 {
     dst = ZFEX_ASSUME_ALIGNED(dst, ZFEX_SIMD_ALIGNMENT);
     src = ZFEX_ASSUME_ALIGNED(src, ZFEX_SIMD_ALIGNMENT);
@@ -693,7 +693,14 @@ fec_new(unsigned short k, unsigned short n) {
 
 
 void
-fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*restrict const*restrict const fecs, const unsigned*restrict const block_nums, size_t num_block_nums, size_t sz) {
+fec_encode(
+    const fec_t* code,
+    const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const src,
+    gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,
+    const unsigned* ZFEX_RESTRICT const block_nums,
+    size_t num_block_nums,
+    size_t sz)
+{
     unsigned char i, j;
     size_t k;
     unsigned fecnum;
@@ -719,9 +726,9 @@ fec_encode(const fec_t* code, const gf*restrict const*restrict const src, gf*res
 
 int fec_encode_simd(
     fec_t const *code,
-    gf const *restrict const *restrict const inpkts,
-    gf *restrict const *restrict const fecs,
-    unsigned const *restrict const block_nums,
+    gf const * ZFEX_RESTRICT const * ZFEX_RESTRICT const inpkts,
+    gf * ZFEX_RESTRICT const * ZFEX_RESTRICT const fecs,
+    unsigned const * ZFEX_RESTRICT const block_nums,
     size_t const num_block_nums,
     size_t const sz)
 {
@@ -779,7 +786,7 @@ int fec_encode_simd(
  * @param matrix a space allocated for a k by k matrix
  */
 void
-build_decode_matrix_into_space(const fec_t*restrict const code, const unsigned*const restrict index, const unsigned k, gf*restrict const matrix) {
+build_decode_matrix_into_space(const fec_t* ZFEX_RESTRICT const code, const unsigned*const ZFEX_RESTRICT index, const unsigned k, gf* ZFEX_RESTRICT const matrix) {
     unsigned char i;
     gf* p;
     for (i=0, p=matrix; i < k; i++, p += k) {
@@ -794,7 +801,7 @@ build_decode_matrix_into_space(const fec_t*restrict const code, const unsigned*c
 }
 
 void
-fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*restrict const*restrict const outpkts, const unsigned*restrict const index, size_t sz) {
+fec_decode(const fec_t* code, const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts, gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const outpkts, const unsigned* ZFEX_RESTRICT const index, size_t sz) {
     gf* m_dec = (gf*)alloca(code->k * code->k);
     unsigned char outix=0;
     unsigned char row=0;

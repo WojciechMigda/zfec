@@ -17,6 +17,13 @@ extern "C"
 #endif
 
 
+#ifdef __cplusplus
+#define ZFEX_RESTRICT __restrict
+#else
+#define ZFEX_RESTRICT restrict
+#endif
+
+
 #if ((defined __arm__) || (defined __arm) || (defined _ARM) || (defined _M_ARM))
 #define ZFEX_HAS_ARM 1
 #else

@@ -7,6 +7,8 @@
  * See README.rst for documentation.
  */
 
+#include "zfex_macros.h"
+
 #include <stddef.h>
 
 #if defined(_MSC_VER)
@@ -30,17 +32,12 @@ extern "C"
 
 typedef unsigned char gf;
 
-typedef struct {
-  unsigned long magic;
-  unsigned short k, n;                     /* parameters of the code */
-  gf* enc_matrix;
+typedef struct
+{
+    unsigned long magic;
+    unsigned short k, n;                     /* parameters of the code */
+    gf* enc_matrix;
 } fec_t;
-
-#if defined(_MSC_VER)
-// actually, some of the flavors (i.e. Enterprise) do support restrict
-//#define restrict __restrict
-#define restrict
-#endif
 
 /**
  * param k the number of blocks required to reconstruct
@@ -56,7 +53,13 @@ void fec_free(fec_t* p);
  * @param num_block_nums the length of the block_nums array
  * @param sz size of a packet in bytes
  */
-void fec_encode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*restrict const*restrict const fecs, const unsigned*restrict const block_nums, size_t num_block_nums, size_t sz);
+void fec_encode(
+    const fec_t* code,
+    const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
+    gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,
+    const unsigned* ZFEX_RESTRICT const block_nums,
+    size_t num_block_nums,
+    size_t sz);
 
 /**
  * @param inpkts the "primary blocks" i.e. the chunks of the input data, all chunks must begin at an address aligned to ZFEX_SIMD_ALIGNMENT
@@ -67,7 +70,13 @@ void fec_encode(const fec_t* code, const gf*restrict const*restrict const inpkts
  *
  * @return EXIT_SUCCESS if all the input was validated as correct, EXIT_FAILURE otherwise
  */
-int fec_encode_simd(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*restrict const*restrict const fecs, const unsigned*restrict const block_nums, size_t num_block_nums, size_t sz);
+int fec_encode_simd(
+    const fec_t* code,
+    const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
+    gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,
+    const unsigned* ZFEX_RESTRICT const block_nums,
+    size_t num_block_nums,
+    size_t sz);
 
 /**
  * @param inpkts an array of packets (size k); If a primary block, i, is present then it must be at index i. Secondary blocks can appear anywhere.
@@ -75,7 +84,12 @@ int fec_encode_simd(const fec_t* code, const gf*restrict const*restrict const in
  * @param index an array of the blocknums of the packets in inpkts
  * @param sz size of a packet in bytes
  */
-void fec_decode(const fec_t* code, const gf*restrict const*restrict const inpkts, gf*restrict const*restrict const outpkts, const unsigned*restrict const index, size_t sz);
+void fec_decode(
+    const fec_t* code,
+    const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
+    gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const outpkts,
+    const unsigned* ZFEX_RESTRICT const index,
+    size_t sz);
 
 /**
  * zfex -- fast forward error correction library with Python interface

@@ -6,7 +6,7 @@ Generate redundant blocks of information such that if some of the blocks are
 lost then the original data can be recovered from the remaining blocks. This
 package includes command-line tools, C API, Python API, and Haskell API.
 
-|build| |test-intel| |test-arm| |haskell-api| |tools| |pypi|
+|build| |test-intel| |test-arm| |haskell-api| |unit-tests| |tools| |pypi|
 
 |intel-benchmark|
 
@@ -356,3 +356,7 @@ Enjoy!
 .. |intel-benchmark| image:: bench/images/bench_intel_k7_m10_1M.png
    :alt: Intel benchmark chart
    :target: bench/Results.rst
+
+.. |unit-tests| image:: https://github.com/WojciechMigda/zfex/actions/workflows/utests.yml/badge.svg
+   :alt: Unit tests
+   :target: https://github.com/WojciechMigda/zfex/actions/workflows/utests.yml

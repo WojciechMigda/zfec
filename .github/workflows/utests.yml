@@ -1,0 +1,40 @@
+name: "Unit tests"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+
+  benchmark-tool-helpers:
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+    steps:
+      - name: "Check out zfex sources"
+        uses: actions/checkout@v3
+
+      - name: "Download and unpack rapidcheck"
+        working-directory: zfex/utests/tests
+        run: |
+          wget https://github.com/WojciechMigda/zfex/raw/rapidcheck/rapidcheck.zip
+          unzip rapidcheck.zip
+
+      - name: "Download and unpack boost.ut"
+        working-directory: zfex/utests/tests/include
+        run: |
+          wget https://github.com/WojciechMigda/zfex/raw/boost.ut/boost-ut.zip
+          unzip boost-ut.zip
+
+      - name: "Build unit tests"
+        working-directory: zfex/utests/.build
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . -- -j2
+
+      - name: "Run unit tests"
+        working-directory: zfex/utests/.build
+        run: |
+          ctest -j 2 --output-on-failure

@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  benchmark-tool-helpers:
+  unit-tests:
     runs-on: "ubuntu-latest"
     strategy:
       fail-fast: false

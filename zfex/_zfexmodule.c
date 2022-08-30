@@ -260,7 +260,7 @@ static PyMemberDef Encoder_members[] = {
 
 static PyTypeObject Encoder_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_zfex.Encoder", /*tp_name*/
+    "__zfex.Encoder", /*tp_name*/
     sizeof(Encoder),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     (destructor)Encoder_dealloc, /*tp_dealloc*/
@@ -532,7 +532,7 @@ static PyMemberDef Decoder_members[] = {
 
 static PyTypeObject Decoder_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_zfex.Decoder", /*tp_name*/
+    "__zfex.Decoder", /*tp_name*/
     sizeof(Decoder),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     (destructor)Decoder_dealloc, /*tp_dealloc*/
@@ -633,7 +633,7 @@ static PyMethodDef fec_functions[] = {
 };
 
 #if PY_MAJOR_VERSION >= 3
-static struct PyModuleDef moduledef = { PyModuleDef_HEAD_INIT, "_zfex", fec__doc__, -1, fec_functions, };
+static struct PyModuleDef moduledef = { PyModuleDef_HEAD_INIT, "__zfex", fec__doc__, -1, fec_functions, };
 #endif
 
 #ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
@@ -642,7 +642,7 @@ static struct PyModuleDef moduledef = { PyModuleDef_HEAD_INIT, "_zfex", fec__doc
 PyMODINIT_FUNC
 #if PY_MAJOR_VERSION >= 3
 #define MOD_ERROR_VAL NULL
-PyInit__zfex(void) {
+PyInit___zfex(void) {
 #else
 #define MOD_ERROR_VAL
 init_fec(void) {
@@ -658,7 +658,7 @@ init_fec(void) {
 #if PY_MAJOR_VERSION >= 3
     module = PyModule_Create(&moduledef);
 #else
-    module = Py_InitModule3("_zfex", fec_functions, fec__doc__);
+    module = Py_InitModule3("__zfex", fec_functions, fec__doc__);
     if (module == NULL)
       return;
 #endif
@@ -670,7 +670,7 @@ init_fec(void) {
     PyModule_AddObject(module, "Decoder", (PyObject *)&Decoder_type);
 
     module_dict = PyModule_GetDict(module);
-    py_fec_error = PyErr_NewException("_zfex.Error", NULL, NULL);
+    py_fec_error = PyErr_NewException("__zfex.Error", NULL, NULL);
     PyDict_SetItemString(module_dict, "Error", py_fec_error);
 
 #if PY_MAJOR_VERSION >= 3

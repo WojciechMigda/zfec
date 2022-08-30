@@ -59,6 +59,7 @@ extensions = [
     Extension(
         "zfex._zfex",
         [
+            os.path.join("zfex", "zfex.c"),
             os.path.join("zfex", "_zfex.pyx"),
         ],
         include_dirs=["zfex/"],

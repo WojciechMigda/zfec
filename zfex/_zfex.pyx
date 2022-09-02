@@ -1,9 +1,20 @@
+# -*- coding: utf-8 -*-
+# distutils: language = c
+#
+# cython: wraparound  =     False
+# cython: boundscheck =     False
+# cython: language_level =  3
+
 """ZFEX - Forward Error Correction
 """
 
-from libc.stdint cimport uint16_t
+from cpython cimport sequence
+from cpython.ref cimport PyObject, Py_INCREF, Py_DECREF
+from cpython.int cimport PyInt_Check, PyInt_AsLong
+from cpython.buffer cimport PyObject_CheckBuffer
+from cpython.bytes cimport PyBytes_FromStringAndSize
 
-from .__zfex import Encoder, Decoder, Error, test_from_agl
+from .__zfex import Encoder, Error, test_from_agl
 
 
 cdef extern from "zfex.h":
@@ -11,6 +22,80 @@ cdef extern from "zfex.h":
         pass
     fec_t* fec_new(unsigned short k, unsigned short m)
     void fec_free(fec_t *)
+    void fec_decode(
+        const fec_t*,
+        const unsigned char **inpkts_pp,
+        unsigned char **outpkts_pp,
+        const unsigned int *index_p,
+        size_t sz)
+
+
+cdef extern from *:
+    """
+#if defined _MSC_VER
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+"""
+    void *alloca(size_t size)
+
+
+# This deserves little explanation:
+#
+# PyObject_CheckReadBuffer and PyObject_AsReadBuffer were used in the OG zfec
+# python wrapper, but they come from Python2 C API and are deprecated.
+# Python3 still exposes them, but as wrappers over existing buffers API,
+# PyObject_CheckBuffer and PyObject_GetBuffer, respectively.
+#
+# PyObject_CheckReadBuffer wrapper does what PyObject_CheckBuffer does, with
+# extra call to PyObject_GetBuffer. Since we are calling PyObject_CheckReadBuffer
+# anyway, PyObject_CheckReadBuffer can be replaced with PyObject_CheckBuffer.
+#
+# For PyObject_AsReadBuffer we will simply copy relevant code from cpython. This will
+# give us API we need without risk of Python3 scrapping it at some point, and we'll
+# get rid of deprecation warnings at compile time, spewed when
+# PyObject_CheckReadBuffer and PyObject_AsReadBuffer are used directly.
+
+# https://cython.readthedocs.io/en/latest/src/userguide/external_C_code.html#including-verbatim-c-code
+cdef extern from *:
+    """
+// based on https://github.com/python/cpython/blob/3.11/Objects/abstract.c#L25
+// _PyErr_Occurred: https://github.com/python/cpython/blob/3.11/Include/internal/pycore_pyerrors.h#L20
+// PyErr_Occurred: https://github.com/python/cpython/blob/3.11/Python/errors.c#L240
+static PyObject *
+null_error(void)
+{
+    if (!PyErr_Occurred()) {
+        PyErr_SetString(PyExc_SystemError,
+                         "null argument to internal routine");
+    }
+    return NULL;
+}
+// https://github.com/python/cpython/blob/3.11/Objects/abstract.c#L318
+static int
+as_read_buffer(PyObject *obj, const void **buffer, Py_ssize_t *buffer_len)
+{
+    Py_buffer view;
+
+    if (obj == NULL || buffer == NULL || buffer_len == NULL) {
+        null_error();
+        return -1;
+    }
+    if (PyObject_GetBuffer(obj, &view, PyBUF_SIMPLE) != 0)
+        return -1;
+
+    *buffer = view.buf;
+    *buffer_len = view.len;
+    PyBuffer_Release(&view);
+    return 0;
+}
+"""
+    int as_read_buffer(PyObject *obj, const void **buffer, Py_ssize_t *buffer_len) except -1
+
+
+cdef class zError(Exception):
+    pass
 
 
 cdef class zEncoder:
@@ -20,8 +105,8 @@ Hold static encoder state (an in-memory table for matrix multiplication), and k 
 @param k: the number of packets required for reconstruction
 @param m: the number of packets generated
 """
-    cdef uint16_t kk
-    cdef uint16_t mm
+    cdef unsigned short kk
+    cdef unsigned short mm
     cdef fec_t *fec_matrix
 
     def __cinit__(self):
@@ -29,11 +114,20 @@ Hold static encoder state (an in-memory table for matrix multiplication), and k 
         self.mm = 0
         self.fec_matrix = NULL
 
-    def __init__(self, unsigned short k, unsigned short m):
-        assert k >= 1, f"Precondition violation: first argument is required to be greater than or equal to 1, but it was {k}"
-        assert m >= 1, f"Precondition violation: second argument is required to be greater than or equal to 1, but it was {m}"
-        assert m <= 256, f"Precondition violation: second argument is required to be less than or equal to 256, but it was {m}"
-        assert k <= m, f"Precondition violation: first argument is required to be less than or equal to the second argument, but they were {k} and {m}, respectively"
+    def __init__(self, int k, int m):
+        if k < 1:
+            raise Error(f"Precondition violation: "
+                "first argument is required to be greater than or equal to 1, but it was {k}")
+        if m < 1:
+            raise Error(f"Precondition violation: "
+                "second argument is required to be greater than or equal to 1, but it was {m}")
+        if m > 256:
+            raise Error(f"Precondition violation: "
+                "second argument is required to be less than or equal to 256, but it was {m}")
+        if k > m:
+            raise Error(f"Precondition violation: "
+            "first argument is required to be less than or equal to the second argument, "
+            "but they were {k} and {m}, respectively")
 
         self.kk = k;
         self.mm = m;
@@ -61,15 +155,50 @@ Encode data into m packets.
 """
         pass
 
-cdef class zDecoder:
+cdef extern from *:
+    """\
+#define SWAP(a,b,T) {T t = a; a = b; b = t;}
+static int
+shuffle(unsigned char **pkt, unsigned int *index, PyObject **blocks, unsigned int k)
+{
+    unsigned int i;
+
+    for (i = 0; i < k ;)
+    {
+        if (index[i] >= k || index[i] == i)
+        {
+            ++i;
+        }
+        else
+        {
+            /*
+             * put pkt in the right position (first check for conflicts).
+             */
+            unsigned int c = index[i];
+
+            if (index[c] == c)
+            {
+                return 1;
+            }
+            SWAP(index[i], index[c], unsigned int);
+            SWAP(pkt[i], pkt[c], unsigned char *);
+            SWAP(blocks[i], blocks[c], PyObject *);
+        }
+    }
+    return 0;
+}
+"""
+    int shuffle(unsigned char **pkt, unsigned int *index, PyObject **blocks, unsigned int k)
+
+cdef class Decoder:
     """\
 Hold static decoder state (an in-memory table for matrix multiplication), and k and m parameters, and provide {decode()} method.
 
 @param k: the number of packets required for reconstruction
 @param m: the number of packets generated
 """
-    cdef uint16_t kk
-    cdef uint16_t mm
+    cdef unsigned short kk
+    cdef unsigned short mm
     cdef fec_t *fec_matrix
 
     def __cinit__(self):
@@ -77,11 +206,20 @@ Hold static decoder state (an in-memory table for matrix multiplication), and k 
         self.mm = 0
         self.fec_matrix = NULL
 
-    def __init__(self, unsigned short k, unsigned short m):
-        assert k >= 1, f"Precondition violation: first argument is required to be greater than or equal to 1, but it was {k}"
-        assert m >= 1, f"Precondition violation: second argument is required to be greater than or equal to 1, but it was {m}"
-        assert m <= 256, f"Precondition violation: second argument is required to be less than or equal to 256, but it was {m}"
-        assert k <= m, f"Precondition violation: first argument is required to be less than or equal to the second argument, but they were {k} and {m}, respectively"
+    def __init__(self, int k, int m):
+        if k < 1:
+            raise Error(f"Precondition violation: "
+                "first argument is required to be greater than or equal to 1, but it was {k}")
+        if m < 1:
+            raise Error(f"Precondition violation: "
+                "second argument is required to be greater than or equal to 1, but it was {m}")
+        if m > 256:
+            raise Error(f"Precondition violation: "
+                "second argument is required to be less than or equal to 256, but it was {m}")
+        if k > m:
+            raise Error(f"Precondition violation: "
+            "first argument is required to be less than or equal to the second argument, "
+            "but they were {k} and {m}, respectively")
 
         self.kk = k;
         self.mm = m;
@@ -108,3 +246,94 @@ Decode a list blocks into a list of segments.
 
 @return a list of strings containing the segment data (i.e. ''.join(retval) yields a string containing the decoded data)
 """
+        cdef object fastblocks = sequence.PySequence_Fast(blocks, "First argument was not a sequence.")
+        cdef object fastblocknums = sequence.PySequence_Fast(blocknums, "Second argument was not a sequence.")
+
+        cdef Py_ssize_t blocks_sz = sequence.PySequence_Fast_GET_SIZE(fastblocks)
+        if blocks_sz > self.kk:
+            raise Error(f"Precondition violation: "
+                "Wrong length -- first argument is required to contain exactly k blocks.  "
+                "len(blocks): {blocks_sz}, k: {self.kk}")
+
+        cdef Py_ssize_t blocknums_sz = sequence.PySequence_Fast_GET_SIZE(fastblocknums)
+        if blocknums_sz > self.kk:
+            raise Error(f"Precondition violation: "
+                "Wrong length -- blocknums is required to contain exactly k integers.  "
+                "len(blocknums): {blocknums_sz}, k: {self.kk}")
+
+        # these are non-owning pointers
+        cdef PyObject **fastblocksitems = sequence.PySequence_Fast_ITEMS(fastblocks)
+        cdef PyObject **fastblocknumsitems = sequence.PySequence_Fast_ITEMS(fastblocknums)
+
+        cdef unsigned char** cblocks = <unsigned char **>alloca(self.kk * sizeof (void *))
+        cdef unsigned int* cblocknums = <unsigned int *>alloca(self.kk * sizeof (unsigned int))
+        cdef unsigned int i = 0
+        cdef long blocknumitem = 0
+        cdef unsigned int needtorecover = 0
+        cdef Py_ssize_t sz = 0
+        cdef Py_ssize_t prev_sz = 0
+
+
+        # go through blocks and blocknums, as interfaced through
+        # fastblocksitems and fastblocknumsitems
+        for i in range(self.kk):
+            # (1) blocknums
+            if PyInt_Check(<object>fastblocknumsitems[i]) == 0:
+                raise Error("Precondition violation: "
+                    "second argument is required to contain int.")
+            blocknumitem = PyInt_AsLong(<object>fastblocknumsitems[i])
+            if blocknumitem < 0 or 255 < blocknumitem:
+                raise Error(f"Precondition violation: "
+                    "block nums can't be less than zero or greater than 255.  {blocknumitem}")
+
+            # copy input blocknums into C-array
+            cblocknums[i] = blocknumitem
+            if blocknumitem >= self.kk:
+                # keep track of number of blocks to be recovered
+                needtorecover += 1
+
+            # (2) blocks
+            if PyObject_CheckBuffer(<object>fastblocksitems[i]) != 1:
+                raise Error(f"Precondition violation: "
+                    "{i}'th item is required to offer the single-segment read "
+                    "character buffer protocol, but it does not.")
+            as_read_buffer(fastblocksitems[i], <const void**>&(cblocks[i]), &sz)
+            if prev_sz != 0 and prev_sz != sz:
+                raise Error(f"Precondition violation: "
+                    "Input blocks are required to be all the same length.  "
+                    "length of one block was: {sz}, length of another block was: {prev_sz}")
+            prev_sz = sz
+
+        if True:
+            # TODO: temporary code until moved back to C-API
+            if shuffle(cblocks, cblocknums, fastblocksitems, self.kk) != 0:
+                raise Error("Corrupted blocknums received")
+
+        cdef PyObject ** recoveredpystrs = <PyObject **>alloca(needtorecover * sizeof (PyObject *))
+        for i in range(needtorecover):
+            b = PyBytes_FromStringAndSize(NULL, sz)
+            Py_INCREF(b) # Ref dance for PyPy [1]
+            recoveredpystrs[i] = <PyObject *>b
+
+        # this array of raw non-owning pointers which will be passed to fec_decode
+        cdef unsigned char** recoveredcstrs = <unsigned char **>alloca(needtorecover * sizeof (void *))
+
+        for i in range(needtorecover):
+            recoveredcstrs[i] = <bytes>recoveredpystrs[i]
+
+        fec_decode(self.fec_matrix, <const unsigned char **>cblocks, recoveredcstrs, cblocknums, sz)
+
+        # blend input blocks with recovered blocks
+        # redundancy blocks are replaced with recovered ones
+        rv = []
+        cdef Py_ssize_t ix = 0
+        cdef unsigned int rix = 0
+        for ix in range(blocks_sz):
+            if cblocknums[ix] >= self.kk:
+                rv.append(<object>recoveredpystrs[rix])
+                Py_DECREF(<object>recoveredpystrs[rix]) # Ref dance for PyPy [2]
+                rix += 1
+            else:
+                rv.append(<object>fastblocksitems[ix])
+
+        return rv

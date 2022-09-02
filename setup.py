@@ -1,5 +1,6 @@
 from setuptools import setup
 from setuptools.extension import Extension
+from distutils import ccompiler
 
 import sys
 import os
@@ -23,14 +24,15 @@ for arg in sys.argv:
         sys.argv.remove(arg)
         break
 
-extra_compile_args.append("-std=c99")
-if DEBUGMODE:
-    extra_compile_args.append("-O0")
-    extra_compile_args.append("-g")
-    extra_compile_args.append("-Wall")
-    extra_compile_args.append("-Wextra")
-    extra_link_args.append("-g")
-    undef_macros.append('NDEBUG')
+if not 'msvc' in ccompiler.get_default_compiler():
+    extra_compile_args.append("-std=c99")
+    if DEBUGMODE:
+        extra_compile_args.append("-O0")
+        extra_compile_args.append("-g")
+        extra_compile_args.append("-Wall")
+        extra_compile_args.append("-Wextra")
+        extra_link_args.append("-g")
+        undef_macros.append('NDEBUG')
 
 extensions = [
     Extension(

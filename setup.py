@@ -45,10 +45,10 @@ if not 'msvc' in ccompiler.get_default_compiler():
 
 extensions = [
     Extension(
-        "zfex.__zfex",
+        "zfex._zfex_test",
         [
             os.path.join("zfex", "zfex.c"),
-            os.path.join("zfex", "_zfexmodule.c"),
+            os.path.join("zfex", "_zfex_test.pyx"),
         ],
         include_dirs=["zfex/"],
         extra_link_args=extra_link_args,

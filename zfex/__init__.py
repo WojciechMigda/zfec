@@ -10,6 +10,7 @@ from . import _version
 __version__ = _version.get_versions()['version']
 
 from ._zfex import Encoder, Decoder, Error
+from . import _zfex_test
 from . import easyfec, filefec, cmdline_zfex, cmdline_zunfex
 
 quiet_pyflakes=[__version__, Error, Encoder, Decoder, cmdline_zunfex, filefec, cmdline_zfex, easyfec]

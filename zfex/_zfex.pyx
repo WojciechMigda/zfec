@@ -14,8 +14,6 @@ from cpython.int cimport PyInt_Check, PyInt_AsLong
 from cpython.buffer cimport PyObject_CheckBuffer
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
-from .__zfex import test_from_agl
-
 
 cdef extern from "zfex.h":
     ctypedef struct fec_t:

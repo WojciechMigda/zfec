@@ -11,3 +11,5 @@ include tox.ini
 include fec.cabal Setup.lhs
 graft haskell
 include stack.yaml
+
+recursive-exclude zfex/utests *

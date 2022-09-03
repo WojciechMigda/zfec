@@ -634,15 +634,19 @@ init_fec (void) {
 
 #define FEC_MAGIC	0xFECC0DEC
 
-void
-fec_free (fec_t *p) {
+zfex_status_code_t
+fec_free (fec_t *p)
+{
     assert (p != NULL && p->magic == (unsigned long)(((FEC_MAGIC ^ p->k) ^ p->n) ^ (uintptr_t) (p->enc_matrix)));
     free (p->enc_matrix);
     free (p);
+
+    return ZFEX_SC_OK;
 }
 
 fec_t *
-fec_new(unsigned short k, unsigned short n) {
+fec_new(unsigned short k, unsigned short n)
+{
     unsigned row, col;
     gf *p, *tmp_m;
 
@@ -692,7 +696,7 @@ fec_new(unsigned short k, unsigned short n) {
 }
 
 
-void
+zfex_status_code_t
 fec_encode(
     const fec_t* code,
     const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const src,
@@ -722,6 +726,8 @@ fec_encode(
             }
         }
     }
+
+    return ZFEX_SC_OK;
 }
 
 int fec_encode_simd(
@@ -800,7 +806,7 @@ build_decode_matrix_into_space(const fec_t* ZFEX_RESTRICT const code, const unsi
     _invert_mat (matrix, k);
 }
 
-void
+zfex_status_code_t
 fec_decode(const fec_t* code, const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts, gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const outpkts, const unsigned* ZFEX_RESTRICT const index, size_t sz) {
     gf* m_dec = (gf*)alloca(code->k * code->k);
     unsigned char outix=0;
@@ -817,6 +823,8 @@ fec_decode(const fec_t* code, const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const
             outix++;
         }
     }
+
+    return ZFEX_SC_OK;
 }
 
 /**

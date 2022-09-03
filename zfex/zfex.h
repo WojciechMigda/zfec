@@ -30,6 +30,12 @@ extern "C"
 #endif
 
 
+typedef enum zfex_status_code_e
+{
+    ZFEX_SC_OK,
+} zfex_status_code_t;
+
+
 typedef unsigned char gf;
 
 typedef struct
@@ -44,7 +50,7 @@ typedef struct
  * param m the total number of blocks created
  */
 fec_t* fec_new(unsigned short k, unsigned short m);
-void fec_free(fec_t* p);
+zfex_status_code_t fec_free(fec_t* p);
 
 /**
  * @param inpkts the "primary blocks" i.e. the chunks of the input data
@@ -53,7 +59,7 @@ void fec_free(fec_t* p);
  * @param num_block_nums the length of the block_nums array
  * @param sz size of a packet in bytes
  */
-void fec_encode(
+zfex_status_code_t fec_encode(
     const fec_t* code,
     const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
     gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,
@@ -84,7 +90,7 @@ int fec_encode_simd(
  * @param index an array of the blocknums of the packets in inpkts
  * @param sz size of a packet in bytes
  */
-void fec_decode(
+zfex_status_code_t fec_decode(
     const fec_t* code,
     const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
     gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const outpkts,

@@ -43,7 +43,7 @@ jobs:
 
       - name: "Install zfex"
         run: |
-          pip install .
+          python3 setup.py build --verbose
           cabal v2-install --lib zfex
 
       - name: "Run haskell tests"

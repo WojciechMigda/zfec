@@ -1,10 +1,19 @@
 from setuptools import setup
 from setuptools.extension import Extension
+from distutils.command.build import build as build_base
 from distutils import ccompiler
 
 import sys
 import os
 import versioneer
+
+
+class build(build_base):
+    def finalize_options(self):
+        super().finalize_options()
+        from Cython.Build import cythonize
+        self.distribution.ext_modules = cythonize(
+            self.distribution.ext_modules, language_level=3)
 
 DEBUGMODE = False
 
@@ -36,17 +45,29 @@ if not 'msvc' in ccompiler.get_default_compiler():
 
 extensions = [
     Extension(
-        "zfex._zfex",
+        "zfex._zfex_test",
         [
-            "zfex/zfex.c",
-            "zfex/_zfexmodule.c"
+            os.path.join("zfex", "zfex.c"),
+            os.path.join("zfex", "_zfex_test.pyx"),
         ],
         include_dirs=["zfex/"],
         extra_link_args=extra_link_args,
         extra_compile_args=extra_compile_args,
         define_macros=define_macros,
-        undef_macros=undef_macros
-    )
+        undef_macros=undef_macros,
+    ),
+    Extension(
+        "zfex._zfex",
+        [
+            os.path.join("zfex", "zfex.c"),
+            os.path.join("zfex", "_zfex.pyx"),
+        ],
+        include_dirs=["zfex/"],
+        extra_link_args=extra_link_args,
+        extra_compile_args=extra_compile_args,
+        define_macros=define_macros,
+        undef_macros=undef_macros,
+    ),
 ]
 
 # Most of our metadata lives in setup.cfg [metadata]. We put "name" here
@@ -58,10 +79,12 @@ setup(
     description="A fast, efficient, portable erasure coding tool",
     long_description=open('README.rst', 'r').read(),
     url="https://github.com/WojciechMigda/zfex",
+    setup_requires=["cython>=0.25"],
     extras_require={
         "bench": ["pyutil >= 3.0.0"],
+        # twisted provides 'trial' command
         "test": ["twisted", "pyutil >= 3.0.0"],
     },
     ext_modules=extensions,
-    cmdclass=versioneer.get_cmdclass(),
+    cmdclass=versioneer.get_cmdclass({'build': build}),
 )

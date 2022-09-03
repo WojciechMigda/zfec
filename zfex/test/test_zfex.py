@@ -109,7 +109,7 @@ class ZFexTest(unittest.TestCase):
             self.fail("Should have raised exception from incorrect arguments to constructor.")
 
     def test_from_agl_c(self):
-        self.assertTrue(zfex._zfex.test_from_agl())
+        self.assertTrue(zfex._zfex_test.test_from_agl())
 
     def test_from_agl_py(self):
         e = zfex.Encoder(3, 5)

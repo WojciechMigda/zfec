@@ -14,7 +14,7 @@ from cpython.int cimport PyInt_Check, PyInt_AsLong
 from cpython.buffer cimport PyObject_CheckBuffer
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
-from .__zfex import Encoder, Error, test_from_agl
+from .__zfex import test_from_agl
 
 
 cdef extern from "zfex.h":
@@ -22,11 +22,18 @@ cdef extern from "zfex.h":
         pass
     fec_t* fec_new(unsigned short k, unsigned short m)
     void fec_free(fec_t *)
-    void fec_decode(
-        const fec_t*,
+    void fec_encode(
+        const fec_t *,
         const unsigned char **inpkts_pp,
         unsigned char **outpkts_pp,
-        const unsigned int *index_p,
+        const unsigned int *indices_p,
+        size_t num_block_nums,
+        size_t sz)
+    void fec_decode(
+        const fec_t *,
+        const unsigned char **inpkts_pp,
+        unsigned char **outpkts_pp,
+        const unsigned int *indices_p,
         size_t sz)
 
 
@@ -94,11 +101,11 @@ as_read_buffer(PyObject *obj, const void **buffer, Py_ssize_t *buffer_len)
     int as_read_buffer(PyObject *obj, const void **buffer, Py_ssize_t *buffer_len) except -1
 
 
-cdef class zError(Exception):
+cdef class Error(Exception):
     pass
 
 
-cdef class zEncoder:
+cdef class Encoder:
     """\
 Hold static encoder state (an in-memory table for matrix multiplication), and k and m parameters, and provide {encode()} method.
 
@@ -145,7 +152,7 @@ Hold static encoder state (an in-memory table for matrix multiplication), and k 
     def m(self):
         return self.mm
 
-    def encode(self, inblocks, desired_block_nums):
+    def encode(self, inblocks, desired_block_nums=None):
         """\
 Encode data into m packets.
 
@@ -153,7 +160,96 @@ Encode data into m packets.
 @param desired_blocks_nums optional sequence of blocknums indicating which blocks to produce and return;  If None, all m blocks will be returned (in order).  (For best performance, make it a tuple instead of a list.)
 @returns: a list of buffers containing the requested blocks; Note that if any of the input blocks were 'primary blocks', i.e. their blocknum was < k, then the result sequence will contain a Python reference to the same Python object as was passed in.  As long as the Python object in question is immutable (i.e. a string) then you don't have to think about this detail, but if it is mutable (i.e. an array), then you have to be aware that if you subsequently mutate the contents of that object then that will also change the contents of the sequence that was returned from this call to encode().
 """
-        pass
+        cdef unsigned int num_check_blocks_produced = 0
+        cdef unsigned int num_desired_blocks = 0
+        cdef unsigned int *c_desired_blocks_nums = NULL
+        cdef object fast_desired_blocks_nums
+        cdef PyObject **fastblocknumsitems = NULL
+        cdef unsigned int i = 0
+
+        if desired_block_nums is None:
+            num_desired_blocks = self.mm
+            c_desired_blocks_nums = <unsigned int *>alloca(num_desired_blocks * sizeof (unsigned int))
+            for i in range(num_desired_blocks):
+                c_desired_blocks_nums[i] = i
+            num_check_blocks_produced = self.mm - self.kk
+        else:
+            fast_desired_blocks_nums = sequence.PySequence_Fast(desired_block_nums, "Second argument (optional) was not a sequence.")
+            num_desired_blocks = sequence.PySequence_Fast_GET_SIZE(fast_desired_blocks_nums)
+            fast_desired_blocks_nums_items = sequence.PySequence_Fast_ITEMS(fast_desired_blocks_nums)
+            c_desired_blocks_nums = <unsigned int *>alloca(num_desired_blocks * sizeof (unsigned int))
+            for i in range(num_desired_blocks):
+                if PyInt_Check(<object>fast_desired_blocks_nums_items[i]) == 0:
+                    raise Error("Precondition violation: second argument is required to contain int.")
+                c_desired_blocks_nums[i] = PyInt_AsLong(<object>fast_desired_blocks_nums_items[i])
+                if c_desired_blocks_nums[i] >= self.kk:
+                    num_check_blocks_produced += 1
+
+        cdef object fastinblocks = sequence.PySequence_Fast(inblocks, "First argument was not a sequence.")
+
+        cdef Py_ssize_t fastinblocks_sz = sequence.PySequence_Fast_GET_SIZE(fastinblocks)
+        if fastinblocks_sz != self.kk:
+            raise Error(f"Precondition violation: Wrong length -- "
+                "first argument (the sequence of input blocks) "
+                "is required to contain exactly k blocks.  "
+                "len(first): {fastinblocks_sz}, k: {self.kk}")
+
+        cdef PyObject **fastinblocksitems = sequence.PySequence_Fast_ITEMS(fastinblocks)
+        cdef Py_ssize_t sz = 0
+        cdef Py_ssize_t prev_sz = 0
+        cdef unsigned char **incblocks = <unsigned char **>alloca(self.kk * sizeof (unsigned char *))
+
+        for i in range(self.kk):
+            if PyObject_CheckBuffer(<object>fastinblocksitems[i]) != 1:
+                raise Error(f"Precondition violation: "
+                    "{i}'th item is required to offer the single-segment "
+                    "read character buffer protocol, but it does not.")
+            as_read_buffer(fastinblocksitems[i], <const void**>&(incblocks[i]), &sz)
+            if prev_sz != 0 and prev_sz != sz:
+                raise Error(f"Precondition violation: "
+                    "Input blocks are required to be all the same length.  "
+                    "length of one block was: {prev_sz}, length of another block was: {sz}")
+            prev_sz = sz
+
+        cdef PyObject **pystrs_produced = <PyObject **>alloca(num_check_blocks_produced * sizeof (PyObject *))
+        cdef unsigned char **check_blocks_produced = <unsigned char **>alloca(num_check_blocks_produced * sizeof (unsigned char *))
+        cdef unsigned int *c_desired_checkblocks_ids = <unsigned int *>alloca(num_check_blocks_produced * sizeof (unsigned int))
+        cdef unsigned int check_block_index = 0
+
+        for i in range(num_desired_blocks):
+            if c_desired_blocks_nums[i] >= self.kk:
+                c_desired_checkblocks_ids[check_block_index] = c_desired_blocks_nums[i]
+
+                b = PyBytes_FromStringAndSize(NULL, sz)
+                Py_INCREF(b) # Ref dance for PyPy [1]
+                pystrs_produced[check_block_index] = <PyObject *>b
+
+                check_blocks_produced[check_block_index] = <bytes>pystrs_produced[check_block_index]
+
+                check_block_index += 1
+
+        if check_block_index != num_check_blocks_produced:
+            raise Error(f"Internal error: "
+                "check_block_index {check_block_index} != "
+                "num_check_blocks_produced {num_check_blocks_produced}")
+
+        fec_encode(self.fec_matrix, <const unsigned char **>incblocks,
+            check_blocks_produced, c_desired_checkblocks_ids,
+            num_check_blocks_produced, sz)
+
+        # blend input blocks with redundancy blocks
+        rv = []
+        check_block_index = 0
+        for i in range(num_desired_blocks):
+            if c_desired_blocks_nums[i] < self.kk:
+                rv.append(<object>fastinblocksitems[c_desired_blocks_nums[i]])
+            else:
+                rv.append(<object>pystrs_produced[check_block_index])
+                Py_DECREF(<object>pystrs_produced[check_block_index]) # Ref dance for PyPy [2]
+                check_block_index += 1
+
+        return rv
+
 
 cdef extern from *:
     """\

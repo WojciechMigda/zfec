@@ -82,6 +82,7 @@ setup(
     setup_requires=["cython>=0.25"],
     extras_require={
         "bench": ["pyutil >= 3.0.0"],
+        # twisted provides 'trial' command
         "test": ["twisted", "pyutil >= 3.0.0"],
     },
     ext_modules=extensions,

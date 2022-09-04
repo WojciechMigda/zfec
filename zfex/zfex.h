@@ -8,6 +8,7 @@
  */
 
 #include "zfex_macros.h"
+#include "zfex_status.h"
 
 #include <stddef.h>
 
@@ -28,12 +29,6 @@
 extern "C"
 {
 #endif
-
-
-typedef enum zfex_status_code_e
-{
-    ZFEX_SC_OK,
-} zfex_status_code_t;
 
 
 typedef unsigned char gf;

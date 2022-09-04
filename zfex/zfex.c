@@ -824,8 +824,7 @@ fec_decode(const fec_t* code, const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const
         }
     }
 
-//    return ZFEX_SC_OK;
-    return ZFEX_SC_INVALID_BLOCK_INDICES;
+    return ZFEX_SC_OK;
 }
 
 /**

@@ -60,13 +60,24 @@ foreign import ccall unsafe "fec_encode" _c_fec_encode :: Ptr CZFEX
                                                        -> Ptr CUInt  -- ^ array of secondary block ids
                                                        -> CSize  -- ^ length of previous
                                                        -> CSize  -- ^ block length
-                                                       -> IO ()
+                                                       -> IO CInt
 foreign import ccall unsafe "fec_decode" _c_fec_decode :: Ptr CZFEX
                                                        -> Ptr (Ptr Word8)  -- ^ input blocks
                                                        -> Ptr (Ptr Word8)  -- ^ output blocks
                                                        -> Ptr CUInt  -- ^ array of input indexes
                                                        -> CSize  -- ^ block length
                                                        -> IO CInt
+
+_fec_encode :: Ptr CZFEX
+            -> Ptr (Ptr Word8)  -- ^ primary blocks
+            -> Ptr (Ptr Word8)  -- ^ (output) secondary blocks
+            -> Ptr CUInt  -- ^ array of secondary block ids
+            -> CSize  -- ^ length of previous
+            -> CSize  -- ^ block length
+            -> IO StatusCode
+_fec_encode fec_p inblocks fecblocks blocknums numblocknums sz = do
+  rv <- _c_fec_encode fec_p inblocks fecblocks blocknums numblocknums sz
+  return $ (toEnum $ (fromIntegral rv) :: StatusCode)
 
 _fec_decode :: Ptr CZFEX
             -> Ptr (Ptr Word8)  -- ^ input blocks
@@ -147,7 +158,10 @@ encode (FECParams params k n) inblocks
         byteStringsToArray inblocks (\src -> do
           createByteStringArray (n - k) sz (\fecs -> do
             uintCArray [k..(n - 1)] (\block_nums -> do
-              _c_fec_encode cfec src fecs block_nums (fromIntegral (n - k)) $ fromIntegral sz)))))
+              sc <- _fec_encode cfec src fecs block_nums (fromIntegral (n - k)) $ fromIntegral sz
+              case sc of
+                ZfexScOk -> return ()
+                _ -> error $ "fec_decode failed with unexpected status code " ++ show sc)))))
 
 -- | A sort function for tagged assoc lists
 sortTagged :: [(Int, a)] -> [(Int, a)]

@@ -20,7 +20,6 @@ extern "C"
 typedef enum zfex_status_code_e
 {
     ZFEX_SC_OK = 0,
-    ZFEX_SC_INVALID_BLOCK_INDICES,
 } zfex_status_code_t;
 
 

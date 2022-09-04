@@ -42,8 +42,10 @@ import Foreign.Marshal.Array (withArray, advancePtr)
 import System.IO (withFile, IOMode(..))
 import System.IO.Unsafe (unsafePerformIO)
 
-data CZFEX
-data FECParams = FECParams (ForeignPtr CZFEX) Int Int
+import Codec.ZFEXStatus
+
+data CZFEX -- anonymous opaque fec_t
+data FECParams = FECParams (ForeignPtr CZFEX) Int Int -- ForeignPtr CZFEX is used as a destructor for fec_t object
 
 instance Show FECParams where
   show (FECParams _ k n) = "ZFEX (" ++ show k ++ ", " ++ show n ++ ")"

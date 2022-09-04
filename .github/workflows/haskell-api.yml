@@ -27,24 +27,30 @@ jobs:
       - name: "Update apt"
         run: sudo apt-get update -y
 
-      - name: "Install ghc"
-        run: sudo apt-get install -y ghc
-
-      - name: "Install haskell dependencies"
-        run: |
-          cabal v2-update
-          cabal v2-install --lib QuickCheck
-          cabal v2-install --lib random
-
       - name: "Set up Python"
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
+      - name: "Install haskell packages"
+        run: |
+          sudo apt-get install -y cabal-install ghc c2hs
+
+      - name: "Install haskell dependencies"
+        run: |
+          cabal new-update
+          cabal new-install --lib QuickCheck
+          cabal new-install --lib random
+
+      - name: "Run c2hs to generate FFI artefacts"
+        run: |
+          c2hs --cppopts=-Izfex -o haskell/Codec/ZFEXStatus.hs haskell/Codec/ZFEXStatus.chs
+          # ZFEXStatus.hs is packaged through zfex.cabal
+
       - name: "Install zfex"
         run: |
           python3 setup.py build --verbose
-          cabal v2-install --lib zfex
+          cabal new-install --lib zfex
 
       - name: "Run haskell tests"
         run: runhaskell haskell/test/ZFEXTest.hs

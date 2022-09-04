@@ -23,8 +23,11 @@ tested-with:     GHC == 6.8.2
 exposed-modules: Codec.ZFEX
 extensions:      ForeignFunctionInterface
 hs-source-dirs:  haskell
-ghc-options:     -Wall
+ghc-options:     -Wall -v
 c-sources:       zfex/zfex.c
 cc-options:      -std=c99
 include-dirs:    zfex
-extra-source-files: zfex/zfex.h, zfex/zfex_pp.h, zfex/zfex_macros.h, zfex/zfex_bytemask.h, zfex/zfex_status.h, COPYING.GPL, COPYING.TGPPL.rst
+extra-source-files: zfex/zfex.h,
+                 zfex/zfex_pp.h, zfex/zfex_macros.h, zfex/zfex_bytemask.h, zfex/zfex_status.h,
+                 haskell/Codec/ZFEXStatus.hs,
+                 COPYING.GPL, COPYING.TGPPL.rst

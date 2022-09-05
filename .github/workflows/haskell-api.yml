@@ -36,20 +36,14 @@ jobs:
         run: |
           sudo apt-get install -y cabal-install ghc c2hs
 
-      - name: "Install haskell dependencies"
+      - name: "Install haskell tests dependencies"
         run: |
           cabal new-update
           cabal new-install --lib QuickCheck
           cabal new-install --lib random
 
-      - name: "Run c2hs to generate FFI artefacts"
-        run: |
-          c2hs --cppopts=-Izfex -o haskell/Codec/ZFEXStatus.hs haskell/Codec/ZFEXStatus.chs
-          # ZFEXStatus.hs is packaged through zfex.cabal
-
       - name: "Install zfex"
         run: |
-          python3 setup.py build --verbose
           cabal new-install --lib zfex
 
       - name: "Run haskell tests"

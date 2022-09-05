@@ -42,29 +42,52 @@ import Foreign.Marshal.Array (withArray, advancePtr)
 import System.IO (withFile, IOMode(..))
 import System.IO.Unsafe (unsafePerformIO)
 
-data CZFEX
-data FECParams = FECParams (ForeignPtr CZFEX) Int Int
+import Codec.ZFEXStatus
+
+data CZFEX -- anonymous opaque fec_t
+data FECParams = FECParams (ForeignPtr CZFEX) Int Int -- ForeignPtr CZFEX is used as a destructor for fec_t object
 
 instance Show FECParams where
   show (FECParams _ k n) = "ZFEX (" ++ show k ++ ", " ++ show n ++ ")"
 
-foreign import ccall unsafe "fec_new" _new :: CUInt  -- ^ k
-                                           -> CUInt  -- ^ n
-                                           -> IO (Ptr CZFEX)
-foreign import ccall unsafe "&fec_free" _free :: FunPtr (Ptr CZFEX -> IO ())
-foreign import ccall unsafe "fec_encode" _encode :: Ptr CZFEX
-                                                 -> Ptr (Ptr Word8)  -- ^ primary blocks
-                                                 -> Ptr (Ptr Word8)  -- ^ (output) secondary blocks
-                                                 -> Ptr CUInt  -- ^ array of secondary block ids
-                                                 -> CSize  -- ^ length of previous
-                                                 -> CSize  -- ^ block length
-                                                 -> IO ()
-foreign import ccall unsafe "fec_decode" _decode :: Ptr CZFEX
-                                                 -> Ptr (Ptr Word8)  -- ^ input blocks
-                                                 -> Ptr (Ptr Word8)  -- ^ output blocks
-                                                 -> Ptr CUInt  -- ^ array of input indexes
-                                                 -> CSize  -- ^ block length
-                                                 -> IO ()
+foreign import ccall unsafe "fec_new" _c_fec_new :: CUInt  -- ^ k
+                                                 -> CUInt  -- ^ n
+                                                 -> IO (Ptr CZFEX)
+foreign import ccall unsafe "&fec_free" _c_fec_free :: FunPtr (Ptr CZFEX -> IO ())
+foreign import ccall unsafe "fec_encode" _c_fec_encode :: Ptr CZFEX
+                                                       -> Ptr (Ptr Word8)  -- ^ primary blocks
+                                                       -> Ptr (Ptr Word8)  -- ^ (output) secondary blocks
+                                                       -> Ptr CUInt  -- ^ array of secondary block ids
+                                                       -> CSize  -- ^ length of previous
+                                                       -> CSize  -- ^ block length
+                                                       -> IO CInt
+foreign import ccall unsafe "fec_decode" _c_fec_decode :: Ptr CZFEX
+                                                       -> Ptr (Ptr Word8)  -- ^ input blocks
+                                                       -> Ptr (Ptr Word8)  -- ^ output blocks
+                                                       -> Ptr CUInt  -- ^ array of input indexes
+                                                       -> CSize  -- ^ block length
+                                                       -> IO CInt
+
+_fec_encode :: Ptr CZFEX
+            -> Ptr (Ptr Word8)  -- ^ primary blocks
+            -> Ptr (Ptr Word8)  -- ^ (output) secondary blocks
+            -> Ptr CUInt  -- ^ array of secondary block ids
+            -> CSize  -- ^ length of previous
+            -> CSize  -- ^ block length
+            -> IO StatusCode
+_fec_encode fec_p inblocks fecblocks blocknums numblocknums sz = do
+  rv <- _c_fec_encode fec_p inblocks fecblocks blocknums numblocknums sz
+  return $ (toEnum $ (fromIntegral rv) :: StatusCode)
+
+_fec_decode :: Ptr CZFEX
+            -> Ptr (Ptr Word8)  -- ^ input blocks
+            -> Ptr (Ptr Word8)  -- ^ output blocks
+            -> Ptr CUInt  -- ^ array of input indexes
+            -> CSize  -- ^ block length
+            -> IO StatusCode
+_fec_decode fec_p inblocks outblocks blocknums sz = do
+  rv <- _c_fec_decode fec_p inblocks outblocks blocknums sz
+  return $ (toEnum $ (fromIntegral rv) :: StatusCode)
 
 -- | Return true if the given @k@ and @n@ values are valid
 isValidConfig :: Int -> Int -> Bool
@@ -83,8 +106,8 @@ fec k n =
   if not (isValidConfig k n)
      then error $ "Invalid FEC parameters: " ++ show k ++ " " ++ show n
      else unsafePerformIO (do
-       cfec <- _new (fromIntegral k) (fromIntegral n)
-       params <- newForeignPtr _free cfec
+       cfec <- _c_fec_new (fromIntegral k) (fromIntegral n)
+       params <- newForeignPtr _c_fec_free cfec
        return $ FECParams params k n)
 
 -- | Create a C array of unsigned from an input array
@@ -135,7 +158,10 @@ encode (FECParams params k n) inblocks
         byteStringsToArray inblocks (\src -> do
           createByteStringArray (n - k) sz (\fecs -> do
             uintCArray [k..(n - 1)] (\block_nums -> do
-              _encode cfec src fecs block_nums (fromIntegral (n - k)) $ fromIntegral sz)))))
+              sc <- _fec_encode cfec src fecs block_nums (fromIntegral (n - k)) $ fromIntegral sz
+              case sc of
+                ZfexScOk -> return ()
+                _ -> error $ "fec_decode failed with unexpected status code " ++ show sc)))))
 
 -- | A sort function for tagged assoc lists
 sortTagged :: [(Int, a)] -> [(Int, a)]
@@ -171,7 +197,10 @@ decode (FECParams params k n) inblocks
         byteStringsToArray (map snd inblocks') (\src -> do
           b <- createByteStringArray (n - k) sz (\out -> do
                  uintCArray presentBlocks (\block_nums -> do
-                   _decode cfec src out block_nums $ fromIntegral sz))
+                   sc <- _fec_decode cfec src out block_nums $ fromIntegral sz
+                   case sc of
+                     ZfexScOk -> return ()
+                     _ -> error $ "fec_decode failed with unexpected status code " ++ show sc))
           let blocks = [0..(n - 1)] \\ presentBlocks
               tagged = zip blocks b
               allBlocks = sortTagged $ tagged ++ inblocks'

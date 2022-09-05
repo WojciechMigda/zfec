@@ -15,19 +15,23 @@ from cpython.buffer cimport PyObject_CheckBuffer
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 
+cdef extern from "zfex_status.h":
+    ctypedef enum zfex_status_code_t:
+        pass
+
 cdef extern from "zfex.h":
     ctypedef struct fec_t:
         pass
     fec_t* fec_new(unsigned short k, unsigned short m)
-    void fec_free(fec_t *)
-    void fec_encode(
+    zfex_status_code_t fec_free(fec_t *)
+    zfex_status_code_t fec_encode(
         const fec_t *,
         const unsigned char **inpkts_pp,
         unsigned char **outpkts_pp,
         const unsigned int *indices_p,
         size_t num_block_nums,
         size_t sz)
-    void fec_decode(
+    zfex_status_code_t fec_decode(
         const fec_t *,
         const unsigned char **inpkts_pp,
         unsigned char **outpkts_pp,

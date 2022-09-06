@@ -15,9 +15,7 @@ from cpython.buffer cimport PyObject_CheckBuffer
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 
-cdef extern from "zfex_status.h":
-    ctypedef enum zfex_status_code_t:
-        pass
+include '_zfex_status.pxi'
 
 cdef extern from "zfex.h":
     ctypedef struct fec_t:
@@ -334,8 +332,8 @@ Hold static decoder state (an in-memory table for matrix multiplication), and k 
         if self.fec_matrix:
             sc = fec_free(self.fec_matrix)
             # TODO: handle errors
-            #if sc != ZFEX_SC_OK:
-            #    raise Error(f"fec_free failed with unexpected status code {sc}")
+            if sc != ZFEX_SC_OK:
+                raise Error(f"fec_free failed with unexpected status code {sc}")
 
     @property
     def k(self):

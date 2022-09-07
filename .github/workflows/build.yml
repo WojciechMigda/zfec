@@ -37,7 +37,45 @@ env:
 jobs:
 
   generate_enum_pxi:
+    name: "Generate enum PXIs"
     uses: ./.github/workflows/gen-py-artifacts.yml
+
+  commit_enum_pxis:
+    name: "Commit code artifacts"
+    needs:
+      - "upload_pypi"
+    runs-on: "ubuntu-latest"
+    outputs:
+      dirty_repo: false
+    steps:
+      - name: "Check out zfex sources"
+        uses: actions/checkout@v3
+        with:
+          # This is required for EndBug/add-and-commit
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - uses: "actions/download-artifact@v3"
+        name: "Download generated code artifacts"
+        with:
+          name: "py-enum-pxis"
+          path: "zfex" # zfex folder under setup.py
+
+      - name: "Check if there are changes to be commited"
+        id: check
+        run: |
+          if [[ $(git diff --stat zfex/_zfex_status.pxi) != '' ]] \
+          || [[ $(git status --untracked --short zfex/_zfex_status.pxi) != '' ]]; then
+            echo "::set-output name=dirty_repo::true"
+            echo "YES"
+          fi
+
+      - name: "Commit changes"
+        if: ${{ steps.check.outputs.dirty_repo == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          default_author: github_actions
+          message: ':robot: Add generated code artifacts'
+          add: 'zfex/_zfex_status.pxi'
 
   build_wheels:
     needs:
@@ -190,6 +228,7 @@ jobs:
           path: dist/*.tar.gz
 
   upload_pypi:
+    name: "Upload to PyPi"
     needs:
       - "build_wheels"
       - "build_sdist"

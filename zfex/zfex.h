@@ -71,7 +71,7 @@ zfex_status_code_t fec_encode(
  *
  * @return EXIT_SUCCESS if all the input was validated as correct, EXIT_FAILURE otherwise
  */
-int fec_encode_simd(
+zfex_status_code_t fec_encode_simd(
     const fec_t* code,
     const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
     gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,

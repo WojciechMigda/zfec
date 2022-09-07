@@ -730,7 +730,7 @@ fec_encode(
     return ZFEX_SC_OK;
 }
 
-int fec_encode_simd(
+zfex_status_code_t fec_encode_simd(
     fec_t const *code,
     gf const * ZFEX_RESTRICT const * ZFEX_RESTRICT const inpkts,
     gf * ZFEX_RESTRICT const * ZFEX_RESTRICT const fecs,
@@ -745,7 +745,7 @@ int fec_encode_simd(
     {
         if (((uintptr_t)inpkts[ix] % ZFEX_SIMD_ALIGNMENT) != 0)
         {
-            return EXIT_FAILURE;
+            return ZFEX_SC_BAD_INPUT_BLOCK_ALIGNMENT;
         }
     }
 
@@ -754,7 +754,7 @@ int fec_encode_simd(
     {
         if (((uintptr_t)fecs[ix] % ZFEX_SIMD_ALIGNMENT) != 0)
         {
-            return EXIT_FAILURE;
+            return ZFEX_SC_BAD_OUTPUT_BLOCK_ALIGNMENT;
         }
     }
 
@@ -783,7 +783,7 @@ int fec_encode_simd(
         }
     }
 
-    return EXIT_SUCCESS;
+    return ZFEX_SC_OK;
 }
 
 /**

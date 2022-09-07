@@ -15,9 +15,7 @@ from cpython.buffer cimport PyObject_CheckBuffer
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 
-cdef extern from "zfex_status.h":
-    ctypedef enum zfex_status_code_t:
-        pass
+include '_zfex_status.pxi'
 
 cdef extern from "zfex.h":
     ctypedef struct fec_t:
@@ -138,13 +136,16 @@ Hold static encoder state (an in-memory table for matrix multiplication), and k 
             "first argument is required to be less than or equal to the second argument, "
             "but they were {k} and {m}, respectively")
 
-        self.kk = k;
-        self.mm = m;
+        self.kk = k
+        self.mm = m
         self.fec_matrix = fec_new(self.kk, self.mm)
 
     def __dealloc__(self):
+        cdef zfex_status_code_t sc
+
         if self.fec_matrix:
-            fec_free(self.fec_matrix);
+            sc = fec_free(self.fec_matrix)
+            # TODO: handle errors
 
     @property
     def k(self):
@@ -235,9 +236,11 @@ Encode data into m packets.
                 "check_block_index {check_block_index} != "
                 "num_check_blocks_produced {num_check_blocks_produced}")
 
-        fec_encode(self.fec_matrix, <const unsigned char **>incblocks,
+        cdef zfex_status_code_t sc = fec_encode(
+            self.fec_matrix, <const unsigned char **>incblocks,
             check_blocks_produced, c_desired_checkblocks_ids,
             num_check_blocks_produced, sz)
+        # TODO: handle errors
 
         # blend input blocks with redundancy blocks
         rv = []
@@ -319,13 +322,18 @@ Hold static decoder state (an in-memory table for matrix multiplication), and k 
             "first argument is required to be less than or equal to the second argument, "
             "but they were {k} and {m}, respectively")
 
-        self.kk = k;
-        self.mm = m;
+        self.kk = k
+        self.mm = m
         self.fec_matrix = fec_new(self.kk, self.mm)
 
     def __dealloc__(self):
+        cdef zfex_status_code_t sc
+
         if self.fec_matrix:
-            fec_free(self.fec_matrix);
+            sc = fec_free(self.fec_matrix)
+            # TODO: handle errors
+            if sc != ZFEX_SC_OK:
+                raise Error(f"fec_free failed with unexpected status code {sc}")
 
     @property
     def k(self):
@@ -419,7 +427,9 @@ Decode a list blocks into a list of segments.
         for i in range(needtorecover):
             recoveredcstrs[i] = <bytes>recoveredpystrs[i]
 
-        fec_decode(self.fec_matrix, <const unsigned char **>cblocks, recoveredcstrs, cblocknums, sz)
+        cdef zfex_status_code_t sc = fec_decode(
+            self.fec_matrix, <const unsigned char **>cblocks, recoveredcstrs, cblocknums, sz)
+        # TODO: handle errors
 
         # blend input blocks with recovered blocks
         # redundancy blocks are replaced with recovered ones

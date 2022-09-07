@@ -632,7 +632,7 @@ init_fec (void) {
  * and then transforming it into a systematic matrix.
  */
 
-#define FEC_MAGIC	0xFECC0DEC
+enum { FEC_MAGIC = 0xFECC0DEC };
 
 zfex_status_code_t
 fec_free (fec_t *p)
@@ -644,9 +644,14 @@ fec_free (fec_t *p)
     return ZFEX_SC_OK;
 }
 
-fec_t *
-fec_new(unsigned short k, unsigned short n)
+zfex_status_code_t
+fec_new(unsigned short k, unsigned short n, fec_t **out_fec_pp)
 {
+    if (out_fec_pp == NULL)
+    {
+        return ZFEX_SC_NULL_POINTER_INPUT;
+    }
+
     unsigned row, col;
     gf *p, *tmp_m;
 
@@ -692,7 +697,9 @@ fec_new(unsigned short k, unsigned short n)
         *p = 1;
     free (tmp_m);
 
-    return retval;
+    *out_fec_pp = retval;
+
+    return ZFEX_SC_OK;
 }
 
 

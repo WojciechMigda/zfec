@@ -391,7 +391,14 @@ int main(int argc, char **argv)
     gf *unaligned_data_p = calloc(fec_simd_aligned_sz * parsed_args.m + (ZFEX_SIMD_ALIGNMENT - 1), 1);
     gf *data_p = (gf *)(((uintptr_t)unaligned_data_p + ZFEX_SIMD_ALIGNMENT - 1) & ~(ZFEX_SIMD_ALIGNMENT - 1));
 
-    fec_t *fec_p = fec_new(parsed_args.k, parsed_args.m);
+    fec_t *fec_p = NULL;
+    zfex_status_code_t const sc = fec_new(parsed_args.k, parsed_args.m, &fec_p);
+    if (sc != ZFEX_SC_OK)
+    {
+        printf("Error: Call to fec_new failed with status code %d\n", sc);
+
+        return EXIT_FAILURE;
+    }
 
     size_t const num_block_nums = parsed_args.m - parsed_args.k;
     /* allocate placeholder for indices of blocks

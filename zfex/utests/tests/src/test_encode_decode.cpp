@@ -23,12 +23,12 @@ shuffle(std::uint8_t **pkt, unsigned int *index, unsigned int k)
     {
         if (index[i] >= k || index[i] == i)
         {
-    	    ++i;
+            ++i;
         }
         else
         {
             /*
-	         * put pkt in the right position (first check for conflicts).
+             * put pkt in the right position (first check for conflicts).
              */
             unsigned int c = index[i];
 
@@ -80,7 +80,9 @@ suite EncodeDecode = []
             std::vector<unsigned int> block_nums(m);
             std::iota(block_nums.begin(), block_nums.end(), 0);
 
-            fec_t *fec_p = fec_new(k, m);
+            fec_t *fec_p = NULL;
+            auto const sc = fec_new(k, m, &fec_p);
+            RC_ASSERT(sc == ZFEX_SC_OK);
 
             /*
              * For encoding:
@@ -89,7 +91,7 @@ suite EncodeDecode = []
              *  output block indices are block_nums[k:m]
              */
             fec_encode(fec_p, block_ptrs.data(), block_ptrs.data() + k, block_nums.data() + k, m - k, block_size);
-            
+
             /*
              * For decoding:
              *  1. I will shuffle indices in block_nums. 'Good' blocks indices will be assumed to be in [0:k]

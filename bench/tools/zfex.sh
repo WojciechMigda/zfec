@@ -15,9 +15,13 @@ set -e
 # cheat sheet: https://en.wikichip.org/wiki/intel/cpuid
 lscpu
 
-wget https://github.com/WojciechMigda/zfex/archive/refs/heads/main.zip -O zfex.zip
+# Pass branch name or commit SHA as the first argument. The default is 'main'
+# bench_zfec.c will be downloaded from that ref.
+ZFEX_HEAD=${1:-main}
+
+wget https://github.com/WojciechMigda/zfex/archive/${ZFEX_HEAD}.zip -O zfex.zip
 unzip zfex.zip
-mv zfex-main zfex
+mv zfex-${ZFEX_HEAD} zfex
 
 build() {
 

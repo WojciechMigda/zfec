@@ -19,9 +19,9 @@ jobs:
       - name: "Run legacy_zfec.sh"
         working-directory: bench/tools
         run: |
-          ./legacy_zfec.sh
+          ./legacy_zfec.sh ${GITHUB_SHA}
 
       - name: "Run zfex.sh"
         working-directory: bench/tools
         run: |
-          ./zfex.sh
+          ./zfex.sh ${GITHUB_SHA}

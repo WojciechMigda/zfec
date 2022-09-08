@@ -814,20 +814,32 @@ build_decode_matrix_into_space(const fec_t* ZFEX_RESTRICT const code, const unsi
 }
 
 zfex_status_code_t
-fec_decode(const fec_t* code, const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts, gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const outpkts, const unsigned* ZFEX_RESTRICT const index, size_t sz) {
-    gf* m_dec = (gf*)alloca(code->k * code->k);
-    unsigned char outix=0;
-    unsigned char row=0;
-    unsigned char col=0;
+fec_decode(
+    fec_t const *code,
+    gf const **inpkts,
+    gf * const *outpkts,
+    unsigned int *index,
+    size_t const sz)
+{
+    gf *m_dec = (gf *)alloca(code->k * code->k);
+    unsigned char outix = 0;
+    unsigned char row = 0;
+    unsigned char col = 0;
+
     build_decode_matrix_into_space(code, index, code->k, m_dec);
 
-    for (row=0; row<code->k; row++) {
-        assert ((index[row] >= code->k) || (index[row] == row)); /* If the block whose number is i is present, then it is required to be in the i'th element. */
-        if (index[row] >= code->k) {
+    for (row = 0; row < code->k; ++row)
+    {
+        assert((index[row] >= code->k) || (index[row] == row)); /* If the block whose number is i is present, then it is required to be in the i'th element. */
+
+        if (index[row] >= code->k)
+        {
             memset(outpkts[outix], 0, sz);
-            for (col=0; col < code->k; col++)
+            for (col = 0; col < code->k; ++col)
+            {
                 addmul(outpkts[outix], inpkts[col], m_dec[row * code->k + col], sz);
-            outix++;
+            }
+            ++outix;
         }
     }
 

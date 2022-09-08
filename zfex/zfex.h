@@ -86,11 +86,11 @@ zfex_status_code_t fec_encode_simd(
  * @param sz size of a packet in bytes
  */
 zfex_status_code_t fec_decode(
-    const fec_t* code,
-    const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
-    gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const outpkts,
-    const unsigned* ZFEX_RESTRICT const index,
-    size_t sz);
+    fec_t const *code,
+    gf const **inpkts,
+    gf * const *outpkts,
+    unsigned int *index,
+    size_t const sz);
 
 /**
  * zfex -- fast forward error correction library with Python interface

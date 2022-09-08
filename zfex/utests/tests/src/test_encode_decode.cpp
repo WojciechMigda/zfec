@@ -15,7 +15,7 @@ using namespace boost::ut;
 
 
 static int
-shuffle(std::uint8_t **pkt, unsigned int *index, unsigned int k)
+shuffle(std::uint8_t const **pkt, unsigned int *index, unsigned int k)
 {
     unsigned int i;
 
@@ -34,7 +34,7 @@ shuffle(std::uint8_t **pkt, unsigned int *index, unsigned int k)
 
             if (index[c] == c)
             {
-            	return 1;
+                return 1;
             }
             std::swap(index[i], index[c]);
             std::swap(pkt[i], pkt[c]);
@@ -101,14 +101,14 @@ suite EncodeDecode = []
             std::mt19937 g(SEED);
             std::shuffle(block_nums.begin(), block_nums.end(), g);
 
-            std::vector<std::uint8_t *> dx_block_ptrs(k);
+            std::vector<std::uint8_t const *> dx_iblock_ptrs(k);
             for (auto ix = 0u; ix < k; ++ix)
             {
-                dx_block_ptrs[ix] = block_ptrs[block_nums[ix]];
+                dx_iblock_ptrs[ix] = block_ptrs[block_nums[ix]];
             }
 
             // This should be done inside fec_decode
-            shuffle(dx_block_ptrs.data(), block_nums.data(), k);
+            shuffle(dx_iblock_ptrs.data(), block_nums.data(), k);
 
             // retrieve indices of blocks that will be recovered and placed into
             // decoder's output
@@ -123,6 +123,8 @@ suite EncodeDecode = []
             // to_recover indices must be sorted
             std::sort(to_recover.begin(), to_recover.end());
 
+            std::vector<std::uint8_t *> dx_oblock_ptrs;
+
             // Allocate placeholders for recovered blocks
             std::vector<std::vector<std::uint8_t>> dx_blocks(to_recover.size());
             for (auto & b : dx_blocks)
@@ -130,10 +132,10 @@ suite EncodeDecode = []
                 b.resize(block_size);
 
                 // dx_block_ptrs[k:] will contain pointers to recovery blocks
-                dx_block_ptrs.push_back(b.data());
+                dx_oblock_ptrs.push_back(b.data());
             }
 
-            fec_decode(fec_p, dx_block_ptrs.data(), dx_block_ptrs.data() + k, block_nums.data(), block_size);
+            fec_decode(fec_p, dx_iblock_ptrs.data(), dx_oblock_ptrs.data(), block_nums.data(), block_size);
 
             fec_free(fec_p);
 

@@ -33,7 +33,7 @@ cdef extern from "zfex.h":
         const fec_t *,
         const unsigned char **inpkts_pp,
         unsigned char **outpkts_pp,
-        const unsigned int *indices_p,
+        unsigned int *indices_p,
         size_t sz)
 
 

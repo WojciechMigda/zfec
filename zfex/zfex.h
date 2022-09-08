@@ -44,7 +44,7 @@ typedef struct
  * param k the number of blocks required to reconstruct
  * param m the total number of blocks created
  */
-fec_t* fec_new(unsigned short k, unsigned short m);
+zfex_status_code_t fec_new(unsigned short k, unsigned short m, fec_t **out_fec_pp);
 zfex_status_code_t fec_free(fec_t* p);
 
 /**
@@ -71,7 +71,7 @@ zfex_status_code_t fec_encode(
  *
  * @return EXIT_SUCCESS if all the input was validated as correct, EXIT_FAILURE otherwise
  */
-int fec_encode_simd(
+zfex_status_code_t fec_encode_simd(
     const fec_t* code,
     const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const inpkts,
     gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,

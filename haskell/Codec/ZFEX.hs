@@ -34,7 +34,7 @@ import Data.Word (Word8)
 import Data.Bits (xor)
 import Data.List (sortBy, partition, (\\), nub)
 import Foreign.Ptr
-import Foreign.Storable (sizeOf, poke)
+import Foreign.Storable (sizeOf, poke, peek)
 import Foreign.ForeignPtr
 import Foreign.C.Types
 import Foreign.Marshal.Alloc
@@ -52,7 +52,8 @@ instance Show FECParams where
 
 foreign import ccall unsafe "fec_new" _c_fec_new :: CUInt  -- ^ k
                                                  -> CUInt  -- ^ n
-                                                 -> IO (Ptr CZFEX)
+                                                 -> Ptr (Ptr CZFEX)
+                                                 -> IO CInt
 foreign import ccall unsafe "&fec_free" _c_fec_free :: FunPtr (Ptr CZFEX -> IO ())
 foreign import ccall unsafe "fec_encode" _c_fec_encode :: Ptr CZFEX
                                                        -> Ptr (Ptr Word8)  -- ^ primary blocks
@@ -67,6 +68,14 @@ foreign import ccall unsafe "fec_decode" _c_fec_decode :: Ptr CZFEX
                                                        -> Ptr CUInt  -- ^ array of input indexes
                                                        -> CSize  -- ^ block length
                                                        -> IO CInt
+
+_fec_new :: CUInt  -- ^ k
+         -> CUInt  -- ^ n
+         -> Ptr (Ptr CZFEX)
+         -> IO StatusCode
+_fec_new k n fec_pp = do
+  rv <- _c_fec_new k n fec_pp
+  return $ (toEnum $ (fromIntegral rv) :: StatusCode)
 
 _fec_encode :: Ptr CZFEX
             -> Ptr (Ptr Word8)  -- ^ primary blocks
@@ -104,11 +113,16 @@ fec :: Int  -- ^ the number of primary blocks
     -> FECParams
 fec k n =
   if not (isValidConfig k n)
-     then error $ "Invalid FEC parameters: " ++ show k ++ " " ++ show n
-     else unsafePerformIO (do
-       cfec <- _c_fec_new (fromIntegral k) (fromIntegral n)
-       params <- newForeignPtr _c_fec_free cfec
-       return $ FECParams params k n)
+    then error $ "Invalid FEC parameters: " ++ show k ++ " " ++ show n
+    else unsafePerformIO (do
+      alloca $ \fec_pp -> (do
+        sc <- _fec_new (fromIntegral k) (fromIntegral n) fec_pp
+        if sc == ZfexScOk
+          then (do
+            fec_p <- peek fec_pp
+            params <- newForeignPtr _c_fec_free fec_p
+            return $ FECParams params k n)
+          else error $ "fec_new failed with unexpected status code " ++ show sc))
 
 -- | Create a C array of unsigned from an input array
 uintCArray :: [Int] -> ((Ptr CUInt) -> IO a) -> IO a

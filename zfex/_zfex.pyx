@@ -20,7 +20,7 @@ include '_zfex_status.pxi'
 cdef extern from "zfex.h":
     ctypedef struct fec_t:
         pass
-    fec_t* fec_new(unsigned short k, unsigned short m)
+    zfex_status_code_t fec_new(unsigned short k, unsigned short m, fec_t **out_fec_pp)
     zfex_status_code_t fec_free(fec_t *)
     zfex_status_code_t fec_encode(
         const fec_t *,
@@ -138,7 +138,10 @@ Hold static encoder state (an in-memory table for matrix multiplication), and k 
 
         self.kk = k
         self.mm = m
-        self.fec_matrix = fec_new(self.kk, self.mm)
+
+        cdef zfex_status_code_t sc = fec_new(self.kk, self.mm, &self.fec_matrix)
+        if  sc != ZFEX_SC_OK:
+            raise Error(f"Call to fec_new failed with status code {sc}")
 
     def __dealloc__(self):
         cdef zfex_status_code_t sc
@@ -324,7 +327,10 @@ Hold static decoder state (an in-memory table for matrix multiplication), and k 
 
         self.kk = k
         self.mm = m
-        self.fec_matrix = fec_new(self.kk, self.mm)
+
+        cdef zfex_status_code_t sc = fec_new(self.kk, self.mm, &self.fec_matrix)
+        if  sc != ZFEX_SC_OK:
+            raise Error(f"Call to fec_new failed with status code {sc}")
 
     def __dealloc__(self):
         cdef zfex_status_code_t sc

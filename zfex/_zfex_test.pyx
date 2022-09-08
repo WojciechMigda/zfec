@@ -32,7 +32,13 @@ _test_from_agl() {
   unsigned char *outblocks[2] = {b3, b4};
   unsigned block_nums[] = {3, 4};
 
-  fec_t *const fec = fec_new(3, 5);
+  fec_t *fec = NULL;
+  zfex_status_code_t const sc = fec_new(3, 5, &fec);
+  if (sc != ZFEX_SC_OK)
+  {
+    printf("Error: call to fec_new failed with status code %d\\n", sc);
+    Py_RETURN_FALSE;
+  }
 
   const unsigned char *inpkts[] = {b3, b4, b2};
   unsigned char *outpkts[] = {b0, b1};

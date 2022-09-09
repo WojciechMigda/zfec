@@ -56,8 +56,6 @@ modnn(int x) {
     return x;
 }
 
-#define SWAP(a,b,t) {t tmp; tmp=a; a=b; b=tmp;}
-
 /*
  * gf_mul(x,y) multiplies two numbers.  It is much faster to use a
  * multiplication table.
@@ -454,7 +452,10 @@ _matmul(gf * a, gf * b, gf * c, unsigned n, unsigned k, unsigned m) {
  * Return non-zero if singular.
  */
 static void
-_invert_mat(gf* src, size_t k) {
+_invert_mat(gf* src, size_t k)
+{
+#define SWAP(a, b, Tp) {Tp t = a; a = b; b = t;}
+
     gf c;
     size_t irow = 0;
     size_t icol = 0;
@@ -550,6 +551,7 @@ _invert_mat(gf* src, size_t k) {
     free(indxr);
     free(ipiv);
     free(id_row);
+#undef SWAP
 }
 
 /*
@@ -793,6 +795,37 @@ zfex_status_code_t fec_encode_simd(
     return ZFEX_SC_OK;
 }
 
+static zfex_status_code_t
+shuffle(gf const **pkt, unsigned int *index, unsigned int k)
+{
+    unsigned int i = 0;
+
+    for (i = 0; i < k; /* nop */)
+    {
+        if ((index[i] >= k) || (index[i] == i))
+        {
+            ++i;
+        }
+        else
+        {
+            /*
+             * put pkt in the right position (first check for conflicts).
+             */
+            unsigned int const c = index[i];
+
+            if (index[c] == c)
+            {
+                return ZFEX_SC_DECODE_INVALID_BLOCK_INDEX;
+            }
+#define SWAP(a, b, Tp) {Tp t = a; a = b; b = t;}
+            SWAP(index[i], index[c], unsigned int);
+            SWAP(pkt[i], pkt[c], gf const *);
+#undef SWAP
+        }
+    }
+    return ZFEX_SC_OK;
+}
+
 /**
  * Build decode matrix into some memory space.
  *
@@ -825,6 +858,12 @@ fec_decode(
     unsigned char outix = 0;
     unsigned char row = 0;
     unsigned char col = 0;
+
+    zfex_status_code_t const shuffle_sc = shuffle(inpkts, index, code->k);
+    if (shuffle_sc != ZFEX_SC_OK)
+    {
+        return shuffle_sc;
+    }
 
     build_decode_matrix_into_space(code, index, code->k, m_dec);
 

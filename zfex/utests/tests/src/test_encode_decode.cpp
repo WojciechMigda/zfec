@@ -14,36 +14,6 @@
 using namespace boost::ut;
 
 
-static int
-shuffle(std::uint8_t const **pkt, unsigned int *index, unsigned int k)
-{
-    unsigned int i;
-
-    for (i = 0; i < k ;)
-    {
-        if (index[i] >= k || index[i] == i)
-        {
-            ++i;
-        }
-        else
-        {
-            /*
-             * put pkt in the right position (first check for conflicts).
-             */
-            unsigned int c = index[i];
-
-            if (index[c] == c)
-            {
-                return 1;
-            }
-            std::swap(index[i], index[c]);
-            std::swap(pkt[i], pkt[c]);
-        }
-    }
-    return 0;
-}
-
-
 suite EncodeDecode = []
 {
 
@@ -106,9 +76,6 @@ suite EncodeDecode = []
             {
                 dx_iblock_ptrs[ix] = block_ptrs[block_nums[ix]];
             }
-
-            // This should be done inside fec_decode
-            shuffle(dx_iblock_ptrs.data(), block_nums.data(), k);
 
             // retrieve indices of blocks that will be recovered and placed into
             // decoder's output

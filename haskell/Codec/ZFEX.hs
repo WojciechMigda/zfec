@@ -223,10 +223,10 @@ secureDivide n input
   | n < 0 = error "secureDivide called with negative number of parts"
   | otherwise = withFile "/dev/urandom" ReadMode (\handle -> do
       let inner 1 bs = return [bs]
-          inner n bs = do
+          inner n' bs = do
             mask <- B.hGet handle (B.length bs)
             let masked = B.pack $ B.zipWith xor bs mask
-            rest <- inner (n - 1) masked
+            rest <- inner (n' - 1) masked
             return (mask : rest)
       inner n input)
 

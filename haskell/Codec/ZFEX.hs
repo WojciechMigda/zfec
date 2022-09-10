@@ -181,18 +181,6 @@ encode (FECParams params k n) inblocks
 sortTagged :: [(Int, a)] -> [(Int, a)]
 sortTagged = sortBy (\a b -> compare (fst a) (fst b))
 
--- | Reorder the given list so that elements with tag numbers < the first
---   argument have an index equal to their tag number (if possible)
-reorderPrimaryBlocks :: Int -> [(Int, a)] -> [(Int, a)]
-reorderPrimaryBlocks n blocks = inner (sortTagged pBlocks) sBlocks [] where
-  (pBlocks, sBlocks) = partition (\(tag, _) -> tag < n) blocks
-  inner [] sBlocks acc = acc ++ sBlocks
-  inner pBlocks [] acc = acc ++ pBlocks
-  inner pBlocks@((tag, a) : ps) sBlocks@(s : ss) acc =
-    if length acc == tag
-       then inner ps sBlocks (acc ++ [(tag, a)])
-       else inner pBlocks ss (acc ++ [s])
-
 -- | Recover the primary blocks from a list of @k@ blocks. Each block must be
 --   tagged with its number (see the module comments about block numbering)
 decode :: FECParams
@@ -205,10 +193,9 @@ decode (FECParams params k n) inblocks
   | not (allByteStringsSameLength $ map snd inblocks) = error "Not all inputs to ZFEX decode are same length"
   | otherwise = unsafePerformIO (do
       let sz = B.length $ snd $ head inblocks
-          inblocks' = reorderPrimaryBlocks k inblocks
-          presentBlocks = map fst inblocks'
+          presentBlocks = map fst inblocks
       withForeignPtr params (\cfec -> do
-        byteStringsToArray (map snd inblocks') (\src -> do
+        byteStringsToArray (map snd inblocks) (\src -> do
           b <- createByteStringArray (n - k) sz (\out -> do
                  uintCArray presentBlocks (\block_nums -> do
                    sc <- _fec_decode cfec src out block_nums $ fromIntegral sz
@@ -217,7 +204,7 @@ decode (FECParams params k n) inblocks
                      _ -> error $ "fec_decode failed with unexpected status code " ++ show sc))
           let blocks = [0..(n - 1)] \\ presentBlocks
               tagged = zip blocks b
-              allBlocks = sortTagged $ tagged ++ inblocks'
+              allBlocks = sortTagged $ tagged ++ inblocks
           return $ take k $ map snd allBlocks)))
 
 -- | Break a ByteString into @n@ parts, equal in length to the original, such

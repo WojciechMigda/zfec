@@ -29,10 +29,9 @@ module Codec.ZFEX (
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as BU
-import qualified Data.ByteString.Internal as BI
 import Data.Word (Word8)
 import Data.Bits (xor)
-import Data.List (sortBy, partition, (\\), nub)
+import Data.List (sortBy, (\\), nub)
 import Foreign.Ptr
 import Foreign.Storable (sizeOf, poke, peek)
 import Foreign.ForeignPtr
@@ -224,10 +223,10 @@ secureDivide n input
   | n < 0 = error "secureDivide called with negative number of parts"
   | otherwise = withFile "/dev/urandom" ReadMode (\handle -> do
       let inner 1 bs = return [bs]
-          inner n bs = do
+          inner n' bs = do
             mask <- B.hGet handle (B.length bs)
             let masked = B.pack $ B.zipWith xor bs mask
-            rest <- inner (n - 1) masked
+            rest <- inner (n' - 1) masked
             return (mask : rest)
       inner n input)
 

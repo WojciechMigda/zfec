@@ -1,6 +1,7 @@
+Cabal-Version:   2.2
 name:            zfex
 version:         0.1.1
-license:         GPL
+license:         GPL-2.0-or-later
 license-file:    README.rst
 author:          Adam Langley <agl@imperialviolet.org>
 maintainer:      Adam Langley <agl@imperialviolet.org>, Wojciech Migda
@@ -13,23 +14,44 @@ description:     This code, based on zfex by Migda, based on zfec by Zooko,
                  has a similar effect, but instead of recovering from the loss
                  of only a single element, it can be parameterized to choose in
                  advance the number of elements whose loss it can tolerate.
-build-type:      Simple
 homepage:        https://github.com/WojciechMigda/zfex
 synopsis:        Forward error correction of ByteStrings
 category:        Codec
-build-depends:   base, bytestring>=0.9
 stability:       provisional
 tested-with:     GHC == 6.8.2
-exposed-modules: Codec.ZFEX
-other-modules:   Codec.ZFEXStatus
-extensions:      ForeignFunctionInterface
-hs-source-dirs:  haskell
-ghc-options:     -Wall -v
-c-sources:       zfex/zfex.c
-cc-options:      -std=c99
-x-extra-c2hs-options: --cppopts=-Izfex
-include-dirs:    zfex
-extra-source-files: zfex/zfex.h,
+                 , GHC == 6.8.5
+                 , GHC == 9.2.2
+extra-source-files:
+                 zfex/zfex.h,
                  zfex/zfex_pp.h, zfex/zfex_macros.h, zfex/zfex_bytemask.h, zfex/zfex_status.h,
                  haskell/Codec/ZFEXStatus.chs,
                  COPYING.GPL, COPYING.TGPPL.rst
+
+Library
+    build-type:      Simple
+    hs-source-dirs:  haskell
+    build-depends:   base, bytestring>=0.9
+    exposed-modules: Codec.ZFEX
+    other-modules:   Codec.ZFEXStatus
+    ghc-options:     -Wall -v
+    c-sources:       zfex/zfex.c
+    cc-options:      -std=c99
+    x-extra-c2hs-options: --cppopts=-Izfex
+    include-dirs:    zfex
+    extensions:      ForeignFunctionInterface
+
+Test-Suite quickcheck-tests
+    type:       exitcode-stdio-1.0
+    hs-source-dirs:
+                haskell/test
+    main-is:    ZFEXTest.hs
+    build-depends:
+                base
+                , bytestring>=0.9
+                , QuickCheck
+                , random
+                , zfex
+
+source-repository head
+  type:     git
+  location: https://github.com/WojciechMigda/zfex.git

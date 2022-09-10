@@ -29,10 +29,9 @@ module Codec.ZFEX (
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as BU
-import qualified Data.ByteString.Internal as BI
 import Data.Word (Word8)
 import Data.Bits (xor)
-import Data.List (sortBy, partition, (\\), nub)
+import Data.List (sortBy, (\\), nub)
 import Foreign.Ptr
 import Foreign.Storable (sizeOf, poke, peek)
 import Foreign.ForeignPtr

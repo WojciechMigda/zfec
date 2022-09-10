@@ -19,32 +19,30 @@ jobs:
     steps:
       - name: "Check out zfex sources"
         uses: actions/checkout@v3
-        with:
-          # Check out the full history, including tags.  This is necessary to
-          # construct non-release version numbers.
-          fetch-depth: 0
 
-      - name: "Update apt"
-        run: sudo apt-get update -y
+      - uses: haskell/actions/setup@v2.0.0
 
-      - name: "Set up Python"
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+      - name: "Update cabal package database"
+        run: cabal new-update
 
-      - name: "Install haskell packages"
-        run: |
-          sudo apt-get install -y cabal-install ghc c2hs
+      - name: "Configure"
+        # Generates the `cabal.project.local` file.
+        # We make sure to enable tests here so that when
+        # we run the tests they don't reconfigure things
+        # and thus cause rebuilding.
+        run: cabal configure --enable-tests --test-show-details=direct
 
-      - name: "Install haskell tests dependencies"
-        run: |
-          cabal new-update
-          cabal new-install --lib QuickCheck
-          cabal new-install --lib random
+      - name: "Install tools"
+        run: cabal new-install --overwrite-policy=always c2hs
+
+      - name: "Install dependencies"
+        run: cabal new-build all --only-dependencies
+
+      - name: "Build"
+        run: cabal new-build all
 
       - name: "Install zfex"
-        run: |
-          cabal new-install --lib zfex
+        run: cabal new-install --lib zfex
 
-      - name: "Run haskell tests"
-        run: runhaskell haskell/test/ZFEXTest.hs
+      - name: "Run tests"
+        run: cabal new-test all

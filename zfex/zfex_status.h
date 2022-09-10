@@ -23,6 +23,7 @@ typedef enum zfex_status_code_e
     ZFEX_SC_BAD_INPUT_BLOCK_ALIGNMENT,
     ZFEX_SC_BAD_OUTPUT_BLOCK_ALIGNMENT,
     ZFEX_SC_NULL_POINTER_INPUT,
+    ZFEX_SC_DECODE_INVALID_BLOCK_INDEX,
 } zfex_status_code_t;
 
 

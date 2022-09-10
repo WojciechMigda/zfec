@@ -13,6 +13,7 @@ from cpython.ref cimport PyObject, Py_INCREF, Py_DECREF
 from cpython.int cimport PyInt_Check, PyInt_AsLong
 from cpython.buffer cimport PyObject_CheckBuffer
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from libc.stdint cimport intptr_t
 
 
 include '_zfex_status.pxi'
@@ -33,9 +34,8 @@ cdef extern from "zfex.h":
         const fec_t *,
         const unsigned char **inpkts_pp,
         unsigned char **outpkts_pp,
-        const unsigned int *indices_p,
+        unsigned int *indices_p,
         size_t sz)
-
 
 cdef extern from *:
     """
@@ -140,15 +140,16 @@ Hold static encoder state (an in-memory table for matrix multiplication), and k 
         self.mm = m
 
         cdef zfex_status_code_t sc = fec_new(self.kk, self.mm, &self.fec_matrix)
-        if  sc != ZFEX_SC_OK:
-            raise Error(f"Call to fec_new failed with status code {sc}")
+        if sc != ZFEX_SC_OK:
+            raise Error(f"Call to fec_new failed with unexpected status code {sc}")
 
     def __dealloc__(self):
         cdef zfex_status_code_t sc
 
         if self.fec_matrix:
             sc = fec_free(self.fec_matrix)
-            # TODO: handle errors
+            if sc != ZFEX_SC_OK:
+                raise Error(f"Call to fec_free failed with unexpected status code {sc}")
 
     @property
     def k(self):
@@ -243,7 +244,8 @@ Encode data into m packets.
             self.fec_matrix, <const unsigned char **>incblocks,
             check_blocks_produced, c_desired_checkblocks_ids,
             num_check_blocks_produced, sz)
-        # TODO: handle errors
+        if  sc != ZFEX_SC_OK:
+            raise Error(f"Call to fec_encode failed with unexpected status code {sc}")
 
         # blend input blocks with redundancy blocks
         rv = []
@@ -258,41 +260,6 @@ Encode data into m packets.
 
         return rv
 
-
-cdef extern from *:
-    """\
-#define SWAP(a,b,T) {T t = a; a = b; b = t;}
-static int
-shuffle(unsigned char **pkt, unsigned int *index, PyObject **blocks, unsigned int k)
-{
-    unsigned int i;
-
-    for (i = 0; i < k ;)
-    {
-        if (index[i] >= k || index[i] == i)
-        {
-            ++i;
-        }
-        else
-        {
-            /*
-             * put pkt in the right position (first check for conflicts).
-             */
-            unsigned int c = index[i];
-
-            if (index[c] == c)
-            {
-                return 1;
-            }
-            SWAP(index[i], index[c], unsigned int);
-            SWAP(pkt[i], pkt[c], unsigned char *);
-            SWAP(blocks[i], blocks[c], PyObject *);
-        }
-    }
-    return 0;
-}
-"""
-    int shuffle(unsigned char **pkt, unsigned int *index, PyObject **blocks, unsigned int k)
 
 cdef class Decoder:
     """\
@@ -388,6 +355,7 @@ Decode a list blocks into a list of segments.
 
         # go through blocks and blocknums, as interfaced through
         # fastblocksitems and fastblocknumsitems
+        cdef dict cblock_to_idx = {}
         for i in range(self.kk):
             # (1) blocknums
             if PyInt_Check(<object>fastblocknumsitems[i]) == 0:
@@ -414,12 +382,8 @@ Decode a list blocks into a list of segments.
                 raise Error(f"Precondition violation: "
                     "Input blocks are required to be all the same length.  "
                     "length of one block was: {sz}, length of another block was: {prev_sz}")
+            cblock_to_idx[<intptr_t>cblocks[i]] = i
             prev_sz = sz
-
-        if True:
-            # TODO: temporary code until moved back to C-API
-            if shuffle(cblocks, cblocknums, fastblocksitems, self.kk) != 0:
-                raise Error("Corrupted blocknums received")
 
         cdef PyObject ** recoveredpystrs = <PyObject **>alloca(needtorecover * sizeof (PyObject *))
         for i in range(needtorecover):
@@ -435,19 +399,27 @@ Decode a list blocks into a list of segments.
 
         cdef zfex_status_code_t sc = fec_decode(
             self.fec_matrix, <const unsigned char **>cblocks, recoveredcstrs, cblocknums, sz)
-        # TODO: handle errors
+        if sc == ZFEX_SC_DECODE_INVALID_BLOCK_INDEX:
+            raise Error("fec_decode: Corrupted blocknums received.")
+        elif sc != ZFEX_SC_OK:
+            raise Error(f"fec_decode failed with unexpected status code {sc}")
 
         # blend input blocks with recovered blocks
         # redundancy blocks are replaced with recovered ones
         rv = []
         cdef Py_ssize_t ix = 0
         cdef unsigned int rix = 0
+        cdef unsigned int fast_ix = 0
         for ix in range(blocks_sz):
             if cblocknums[ix] >= self.kk:
                 rv.append(<object>recoveredpystrs[rix])
                 Py_DECREF(<object>recoveredpystrs[rix]) # Ref dance for PyPy [2]
                 rix += 1
             else:
-                rv.append(<object>fastblocksitems[ix])
+                # As a side effect cblocks were rearranged by fec_decode.
+                # To append associated python buffer we need to retrieve
+                # its index from map we created earlier.
+                fast_ix = cblock_to_idx[<intptr_t>cblocks[ix]]
+                rv.append(<object>fastblocksitems[fast_ix])
 
         return rv

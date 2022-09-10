@@ -43,7 +43,7 @@ def _h(k, m, ss):
     decer = zfex.Decoder(k, m)
     decoded = decer.decode(blocks, nums)
     assert len(decoded) == len(ss), (len(decoded), len(ss),)
-    assert tuple([str(s) for s in decoded]) == tuple([str(s) for s in ss]), (tuple([ab(str(s)) for s in decoded]), tuple([ab(str(s)) for s in ss]),)
+    assert tuple([str(s) for s in decoded]) == tuple([str(s) for s in ss]), (tuple([ab(str(s)) for s in decoded]), tuple([ab(str(s)) for s in ss]), k, m)
 
 def _help_test_random():
     m = random.randrange(1, 257)
@@ -70,7 +70,7 @@ def _h_easy(k, m, s):
 
     decodeds = decer.decode(blocks, nums, padlen=k*len(blocks[0]) - len(s))
     assert len(decodeds) == len(s), (ab(decodeds), ab(s), k, m)
-    assert decodeds == s, (ab(decodeds), ab(s),)
+    assert decodeds == s, (ab(decodeds), ab(s), k, m)
 
 def _help_test_random_easy():
     m = random.randrange(1, 257)

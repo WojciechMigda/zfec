@@ -35,10 +35,11 @@ Library
     other-modules:   Codec.ZFEXStatus
     ghc-options:     -Wall -v
     c-sources:       zfex/zfex.c
-    cc-options:      -std=c99
     x-extra-c2hs-options: --cppopts=-Izfex
     include-dirs:    zfex
     extensions:      ForeignFunctionInterface
+    if !os(windows)
+      cc-options:    -std=c99
 
 Test-Suite quickcheck-tests
     type:       exitcode-stdio-1.0

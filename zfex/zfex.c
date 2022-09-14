@@ -218,7 +218,7 @@ void addmul_neon_kernel(
 
 #if (ZFEX_INTEL_SSSE3_FEATURE == 1)
 static inline
-void addmul_ssse3_kernel(
+void addmul_ssse3_kernel_aligned(
     uint8_t *dst,
     uint8_t const *src,
     __m128i const vmul_lo,
@@ -235,6 +235,24 @@ void addmul_ssse3_kernel(
     register __m128i const to_xor = _mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi);
 
     _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
+}
+
+
+static inline
+void addmul_ssse3_kernel_unaligned(
+    uint8_t *dst,
+    uint8_t const *src,
+    __m128i const vmul_lo,
+    __m128i const vmul_hi,
+    __v16qu const mask_0F)
+{
+    register __v16qu const vsrc = (__v16qu)_mm_lddqu_si128((__m128i const *)src);
+    register __v16qu const vsrc_lo = vsrc & mask_0F;
+    register __v16qu const vsrc_hi = (__v16qu)((__v8hu)vsrc >> 4) & mask_0F;
+
+    register __m128i const to_xor = _mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi);
+
+    _mm_storeu_si128((__m128i *)dst, to_xor ^ _mm_lddqu_si128((__m128i const *)dst));
 }
 #endif /* (ZFEX_INTEL_SSSE3_FEATURE == 1) */
 
@@ -254,6 +272,50 @@ inline
 #endif /* ZFEX_INLINE_ADDMUL_FEATURE */
 void _addmul1(register gf* ZFEX_RESTRICT dst, register const gf* ZFEX_RESTRICT src, gf c, size_t sz)
 {
+#if (ZFEX_INTEL_SSSE3_FEATURE == 1)
+    enum { ZFEX_UNROLL_ADDMUL_UNIT = sizeof (__m128i) };
+    enum { ZFEX_UNROLL_ADDMUL_TILE_1 = ZFEX_UNROLL_ADDMUL_UNIT };
+    enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL_SIMD) };
+
+    const gf* lim = &dst[sz];
+
+    register __m128i const vmul_lo = _mm_load_si128((__m128i const *)gf_mul_table[c]);
+    register __m128i const vmul_hi = _mm_load_si128((__m128i const *)gf_mul_table_16[c]);
+
+    register __v16qu const mask0F = (__v16qu)_mm_set1_epi8(0x0F);
+
+#if (ZFEX_UNROLL_ADDMUL_SIMD > 1)
+    lim -= ZFEX_UNROLL_ADDMUL_TILE - 1;
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
+    {
+#define KERNEL(i) addmul_ssse3_kernel_unaligned(dst + i * ZFEX_UNROLL_ADDMUL_UNIT, src + i * ZFEX_UNROLL_ADDMUL_UNIT, vmul_lo, vmul_hi, mask0F);
+        PP_REPEAT(ZFEX_UNROLL_ADDMUL_SIMD, KERNEL)
+#undef KERNEL
+    }
+    lim += ZFEX_UNROLL_ADDMUL_TILE - 1;
+#endif /* (ZFEX_UNROLL_ADDMUL_SIMD > 1) */
+
+    lim -= ZFEX_UNROLL_ADDMUL_TILE_1 - 1;
+    for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE_1, src += ZFEX_UNROLL_ADDMUL_TILE_1)
+    {
+        addmul_ssse3_kernel_unaligned(dst, src, vmul_lo, vmul_hi, mask0F);
+    }
+    lim += ZFEX_UNROLL_ADDMUL_TILE_1 - 1;
+
+    if (dst < lim)
+    {
+        register __v16qu const vsrc = (__v16qu)_mm_lddqu_si128((__m128i const *)src);
+        register __v16qu const vsrc_lo = vsrc & mask0F;
+        register __v16qu const vsrc_hi = (__v16qu)((__v8hu)vsrc >> 4) & mask0F;
+
+        register __m128i const tail_mask = mask_to_u128_SSSE3(0xFFFF >> (16 - (lim - dst)));
+
+        register __m128i const to_xor = (_mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi));
+
+        _mm_maskmoveu_si128(to_xor ^ _mm_lddqu_si128((__m128i const *)dst), tail_mask, (char *)dst);
+    }
+
+#else /* not ZFEX_INTEL_SSSE3_FEATURE */
     enum { ZFEX_UNROLL_ADDMUL_UNIT = 1 };
     enum { ZFEX_UNROLL_ADDMUL_TILE = ZFEX_UNROLL_ADDMUL_UNIT * (ZFEX_UNROLL_ADDMUL) };
 
@@ -276,6 +338,7 @@ void _addmul1(register gf* ZFEX_RESTRICT dst, register const gf* ZFEX_RESTRICT s
     {
         GF_ADDMULC (*dst, *src);
     }
+#endif
 }
 
 #define addmul_simd(dst, src, c, sz)                 \
@@ -306,7 +369,7 @@ void _addmul1_simd(register gf * ZFEX_RESTRICT dst, register const gf * ZFEX_RES
     lim -= ZFEX_UNROLL_ADDMUL_TILE - 1;
     for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE, src += ZFEX_UNROLL_ADDMUL_TILE)
     {
-#define KERNEL(i) addmul_ssse3_kernel(dst + i * ZFEX_UNROLL_ADDMUL_UNIT, src + i * ZFEX_UNROLL_ADDMUL_UNIT, vmul_lo, vmul_hi, mask0F);
+#define KERNEL(i) addmul_ssse3_kernel_aligned(dst + i * ZFEX_UNROLL_ADDMUL_UNIT, src + i * ZFEX_UNROLL_ADDMUL_UNIT, vmul_lo, vmul_hi, mask0F);
         PP_REPEAT(ZFEX_UNROLL_ADDMUL_SIMD, KERNEL)
 #undef KERNEL
     }
@@ -316,7 +379,7 @@ void _addmul1_simd(register gf * ZFEX_RESTRICT dst, register const gf * ZFEX_RES
     lim -= ZFEX_UNROLL_ADDMUL_TILE_1 - 1;
     for (; dst < lim; dst += ZFEX_UNROLL_ADDMUL_TILE_1, src += ZFEX_UNROLL_ADDMUL_TILE_1)
     {
-        addmul_ssse3_kernel(dst, src, vmul_lo, vmul_hi, mask0F);
+        addmul_ssse3_kernel_aligned(dst, src, vmul_lo, vmul_hi, mask0F);
     }
     lim += ZFEX_UNROLL_ADDMUL_TILE_1 - 1;
 
@@ -706,17 +769,18 @@ fec_new(unsigned short k, unsigned short n, fec_t **out_fec_pp)
 
 zfex_status_code_t
 fec_encode(
-    const fec_t* code,
-    const gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const src,
-    gf* ZFEX_RESTRICT const* ZFEX_RESTRICT const fecs,
-    const unsigned* ZFEX_RESTRICT const block_nums,
-    size_t num_block_nums,
-    size_t sz)
+    fec_t const *code,
+    gf const * ZFEX_RESTRICT const * ZFEX_RESTRICT const src,
+    gf * ZFEX_RESTRICT const * ZFEX_RESTRICT const fecs,
+    const unsigned * ZFEX_RESTRICT const block_nums,
+    size_t const num_block_nums,
+    size_t const sz)
 {
-    unsigned char i, j;
-    size_t k;
-    unsigned fecnum;
-    const gf* p;
+    unsigned int i = 0;
+    unsigned int j = 0;
+    size_t k = 0;
+    unsigned int fecnum = 0;
+    const gf* p = NULL;
 
     for (k = 0; k < sz; k += ZFEX_STRIDE)
     {
@@ -727,7 +791,9 @@ fec_encode(
             fecnum = block_nums[i];
             assert(fecnum >= code->k);
             memset(fecs[i] + k, 0, stride);
+
             p = &(code->enc_matrix[fecnum * code->k]);
+
             for (j = 0; j < code->k; ++j)
             {
                 addmul(fecs[i] + k, src[j] + k, p[j], stride);
@@ -766,11 +832,11 @@ zfex_status_code_t fec_encode_simd(
         }
     }
 
-    unsigned i = 0;
-    unsigned j = 0;
+    unsigned int i = 0;
+    unsigned int j = 0;
     size_t k = 0;
-    unsigned fecnum = 0;
-    gf const *p;
+    unsigned int fecnum = 0;
+    gf const *p = NULL;
 
     for (k = 0; k < sz; k += ZFEX_STRIDE)
     {

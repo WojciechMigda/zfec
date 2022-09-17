@@ -38,3 +38,15 @@ jobs:
         working-directory: zfex/utests/.build
         run: |
           ctest -j 2 --output-on-failure
+
+      - name: "Build SSSE3-enabled unit tests"
+        working-directory: zfex/utests/.build
+        run: |
+          rm -rf *
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-mssse3 -DZFEX_USE_INTEL_SSSE3" ..
+          cmake --build . -- -j2
+
+      - name: "Run SSSE3-enabled unit tests"
+        working-directory: zfex/utests/.build
+        run: |
+          ctest -j 2 --output-on-failure

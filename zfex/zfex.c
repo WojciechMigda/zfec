@@ -629,7 +629,7 @@ _invert_mat(gf* src, size_t k)
  * p = coefficients of the matrix (p_i)
  * q = values of the polynomial (known)
  */
-void
+static void
 _invert_vdm (gf* src, unsigned k) {
     unsigned i, j, row, col;
     gf *b, *c, *p;

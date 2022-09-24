@@ -328,10 +328,9 @@ void _addmul1_simd(register gf * ZFEX_RESTRICT dst, register const gf * ZFEX_RES
 
         register __m128i const tail_mask = mask_to_u128_SSSE3(0xFFFF >> (16 - (lim - dst)));
 
-        register __m128i const to_xor = (_mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi))
-            & tail_mask;
+        register __m128i const to_xor = (_mm_shuffle_epi8(vmul_lo, (__m128i)vsrc_lo) ^ _mm_shuffle_epi8(vmul_hi, (__m128i)vsrc_hi));
 
-        _mm_store_si128((__m128i *)dst, to_xor ^ _mm_load_si128((__m128i const *)dst));
+        _mm_maskmoveu_si128(to_xor ^ _mm_load_si128((__m128i const *)dst), tail_mask, (char *)dst);
     }
 
 #elif (ZFEX_ARM_NEON_FEATURE == 1)

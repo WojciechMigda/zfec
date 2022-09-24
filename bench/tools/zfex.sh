@@ -38,6 +38,8 @@ zfex/bench/bench_zfex ${ARGS} > /dev/null && zfex/bench/bench_zfex ${ARGS}
 
 }
 
+###  ALIGNED
+
 # Benchmark: -O2 -DZFEX_UNROLL_ADDMUL_SIMD=1
 EXTRA_CFLAGS="-O2 -DZFEX_UNROLL_ADDMUL_SIMD=1" build
 
@@ -67,3 +69,37 @@ EXTRA_CFLAGS="-O3 -DZFEX_UNROLL_ADDMUL_SIMD=8" build
 
 ARGS="-A -k 7 -m 10 -s 1000000 -i 30" run
 ARGS="-A -k 223 -m 255 -s 43488 -i 30" run
+
+
+###  UNALIGNED
+
+# Benchmark: -O2 -DZFEX_UNROLL_ADDMUL_SIMD=1
+EXTRA_CFLAGS="-O2 -DZFEX_UNROLL_ADDMUL_SIMD=1" build
+
+ARGS="-k 7 -m 10 -s 1000000 -i 30" run
+ARGS="-k 223 -m 255 -s 43488 -i 30" run
+
+# Benchmark: -O3 -DZFEX_UNROLL_ADDMUL_SIMD=1
+EXTRA_CFLAGS="-O3 -DZFEX_UNROLL_ADDMUL_SIMD=1" build
+
+ARGS="-k 7 -m 10 -s 1000000 -i 30" run
+ARGS="-k 223 -m 255 -s 43488 -i 30" run
+
+# Benchmark: -O3 -DZFEX_UNROLL_ADDMUL_SIMD=2
+EXTRA_CFLAGS="-O3 -DZFEX_UNROLL_ADDMUL_SIMD=2" build
+
+ARGS="-k 7 -m 10 -s 1000000 -i 30" run
+ARGS="-k 223 -m 255 -s 43488 -i 30" run
+
+# Benchmark: -O3 -DZFEX_UNROLL_ADDMUL_SIMD=4
+EXTRA_CFLAGS="-O3 -DZFEX_UNROLL_ADDMUL_SIMD=4" build
+
+ARGS="-k 7 -m 10 -s 1000000 -i 30" run
+ARGS="-k 223 -m 255 -s 43488 -i 30" run
+
+# Benchmark: -O3 -DZFEX_UNROLL_ADDMUL_SIMD=8
+EXTRA_CFLAGS="-O3 -DZFEX_UNROLL_ADDMUL_SIMD=8" build
+
+ARGS="-k 7 -m 10 -s 1000000 -i 30" run
+ARGS="-k 223 -m 255 -s 43488 -i 30" run
+

@@ -9,11 +9,18 @@ zfex web site: U{https://github.com/WojciechMigda/zfex}
 from . import _version
 __version__ = _version.get_versions()['version']
 
-from ._zfex import Encoder, Decoder, Error
-from . import _zfex_test
-from . import easyfec, filefec, cmdline_zfex, cmdline_zunfex
+try:
+    __ZFEX_SETUP__  # type: ignore
+except NameError:
+    __ZFEX_SETUP__ = False
 
-quiet_pyflakes=[__version__, Error, Encoder, Decoder, cmdline_zunfex, filefec, cmdline_zfex, easyfec]
+# Only go on if not in setup.py
+if not __ZFEX_SETUP__:
+    from ._zfex import Encoder, Decoder, Error
+    from . import _zfex_test
+    from . import easyfec, filefec, cmdline_zfex, cmdline_zunfex
+
+    quiet_pyflakes=[__version__, Error, Encoder, Decoder, cmdline_zunfex, filefec, cmdline_zfex, easyfec]
 
 # zfex -- fast forward error correction library with Python interface
 #

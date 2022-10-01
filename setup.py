@@ -1,7 +1,13 @@
+import builtins
 from setuptools import setup
 from setuptools.extension import Extension
 from distutils.command.build import build as build_base
 from distutils import ccompiler
+
+# Not to try loading things from the main module during setup
+builtins.__ZFEX_SETUP__ = True
+
+from zfex.distutils.ccompilercapabilities import CCompilerCapabilities
 
 import sys
 import os
@@ -16,6 +22,14 @@ class build(build_base):
             self.distribution.ext_modules, language_level=3)
 
 DEBUGMODE = False
+
+cc_capabilities = CCompilerCapabilities(ccompiler.new_compiler())
+if cc_capabilities.has(CCompilerCapabilities.SIMD_SSSE3):
+    print("Used C compiler has SSSE3 capabilities")
+if cc_capabilities.has(CCompilerCapabilities.SIMD_NEON32):
+    print("Used C compiler has NEON32 capabilities")
+if cc_capabilities.has(CCompilerCapabilities.SIMD_NEON64):
+    print("Used C compiler has NEON64 capabilities")
 
 if "--debug" in sys.argv:
     DEBUGMODE = True

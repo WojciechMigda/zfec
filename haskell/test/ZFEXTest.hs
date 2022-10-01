@@ -4,6 +4,7 @@ import qualified Data.ByteString as B
 import qualified Codec.ZFEX as ZFEX
 import System.IO (withFile, IOMode(..))
 import System.Random
+import System.Entropy
 import Data.List (sortBy)
 
 import Test.QuickCheck
@@ -45,7 +46,7 @@ checkDivide n = do
 
 checkEnFEC :: Int -> IO ()
 checkEnFEC len = do
-  testdata <- withFile "/dev/urandom" ReadMode (\handle -> B.hGet handle len)
+  testdata <- getEntropy len
   let [a, b, c, d, e] = ZFEX.enFEC 3 5 testdata
   if ZFEX.deFEC 3 5 [b, e, d] == testdata
      then return ()

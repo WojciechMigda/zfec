@@ -45,7 +45,7 @@ flag neon
 Library
     build-type:      Simple
     hs-source-dirs:  haskell
-    build-depends:   base, bytestring>=0.9
+    build-depends:   base, bytestring>=0.9, entropy
     exposed-modules: Codec.ZFEX
     other-modules:   Codec.ZFEXStatus
     ghc-options:     -Wall -v
@@ -87,6 +87,7 @@ Test-Suite quickcheck-tests
                 , bytestring>=0.9
                 , QuickCheck
                 , random
+                , entropy
                 , zfex
 
 source-repository head

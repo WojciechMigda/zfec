@@ -40,6 +40,7 @@ import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array (withArray, advancePtr)
 import System.IO (withFile, IOMode(..))
 import System.IO.Unsafe (unsafePerformIO)
+import System.Entropy
 
 import Codec.ZFEXStatus
 
@@ -221,14 +222,14 @@ secureDivide :: Int  -- ^ the number of parts requested
              -> IO [B.ByteString]
 secureDivide n input
   | n < 0 = error "secureDivide called with negative number of parts"
-  | otherwise = withFile "/dev/urandom" ReadMode (\handle -> do
+  | otherwise = do
       let inner 1 bs = return [bs]
           inner n' bs = do
-            mask <- B.hGet handle (B.length bs)
+            mask <- getEntropy (B.length bs)
             let masked = B.pack $ B.zipWith xor bs mask
             rest <- inner (n' - 1) masked
             return (mask : rest)
-      inner n input)
+      inner n input
 
 -- | Reverse the operation of secureDivide. The order of the inputs doesn't
 --   matter, but they must all be the same length

@@ -41,6 +41,9 @@ new C-based benchmark tool and a new SIMD-friendly API.
 Installation
 ------------
 
+Python
+......
+
 ``pip install zfex``
 
 To run the self-tests, execute ``tox`` from an unpacked source tree or git checkout.
@@ -62,6 +65,25 @@ If ``zfex`` is already cloned locally, then custom compiler flags can be passed 
 In similar manner, one can override compiler being used. Simply issue:
 
 ``CC=arm-linux-gnueabihf-gcc-7 pip install git+https://github.com/WojciechMigda/zfex.git``
+
+Haskell
+.......
+
+Building haskell wrapper relies on ``cabal``. The most basic build command is as follows:
+
+``cabal new-build all``
+
+and it will use default C compiler settings. There are few flags available, which control building process:
+
+* ``speed`` will pass highest level optimization flag to the compiler,
+* ``ssse3`` will enable SSSE3 optimizations on Intel platform,
+* ``neon`` will enable NEON optimizations on Arm platform.
+
+Example build command which uses these flags is below:
+
+``cabal new-build all --flags "speed ssse3"``
+
+For more details, including installing dependencies and running tests, please inspect haskell github actions workflow file.
 
 Community
 ---------

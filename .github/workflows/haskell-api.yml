@@ -15,6 +15,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - macos-latest
+          - windows-latest
 
     steps:
       - name: "Check out zfex sources"
@@ -40,6 +42,47 @@ jobs:
 
       - name: "Build"
         run: cabal new-build all
+
+      - name: "Install zfex"
+        run: cabal new-install --lib zfex
+
+      - name: "Run tests"
+        run: cabal new-test all
+
+  Haskell-API-SIMD-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - name: "Check out zfex sources"
+        uses: actions/checkout@v3
+
+      - uses: haskell/actions/setup@v2.0.1
+
+      - name: "Update cabal package database"
+        run: cabal new-update
+
+      - name: "Configure"
+        # Generates the `cabal.project.local` file.
+        # We make sure to enable tests here so that when
+        # we run the tests they don't reconfigure things
+        # and thus cause rebuilding.
+        run: cabal configure --enable-tests --test-show-details=direct
+
+      - name: "Install tools"
+        run: cabal new-install --overwrite-policy=always c2hs
+
+      - name: "Install dependencies"
+        run: cabal new-build all --only-dependencies
+
+      - name: "Build"
+        run: cabal new-build all --flags "speed ssse3"
 
       - name: "Install zfex"
         run: cabal new-install --lib zfex

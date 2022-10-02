@@ -27,19 +27,55 @@ extra-source-files:
                  haskell/Codec/ZFEXStatus.chs,
                  COPYING.GPL, COPYING.TGPPL.rst
 
+flag speed
+    description: Enable highest level optimizations for speed
+    default: False
+    manual: True
+
+flag ssse3
+    description: Enable SSSE3 SIMD optimizations
+    default: False
+    manual: True
+
+flag neon
+    description: Enable NEON SIMD optimizations
+    default: False
+    manual: True
+
 Library
     build-type:      Simple
     hs-source-dirs:  haskell
-    build-depends:   base, bytestring>=0.9
+    build-depends:   base, bytestring>=0.9, entropy
     exposed-modules: Codec.ZFEX
     other-modules:   Codec.ZFEXStatus
     ghc-options:     -Wall -v
     c-sources:       zfex/zfex.c
     x-extra-c2hs-options: --cppopts=-Izfex
     include-dirs:    zfex
-    extensions:      ForeignFunctionInterface
-    if !os(windows)
+    default-extensions:
+                     ForeignFunctionInterface
+
+    -- GHC's Windows toolchain is based on clang/libc++ in GHC 9.4 and later
+    if (!os(windows)) || (os(windows) && impl(ghc >= 9.4))
       cc-options:    -std=c99
+
+    if flag(ssse3)
+      if arch(x86_64) && (os(linux) || os(darwin) || (os(windows) && impl(ghc >= 9.4)))
+        cc-options: -mssse3 -DZFEX_USE_INTEL_SSSE3
+      elif arch(x86_64) && os(windows)
+        cc-options: /arch:SSE2 /DZFEX_USE_INTEL_SSSE3
+
+    if flag(neon)
+      if arch(arm) && (os(linux) || os(darwin) || (os(windows) && impl(ghc >= 9.4)))
+        cc-options: -DZFEX_USE_ARM_NEON -mfpu=neon
+      elif arch(arm) && os(windows)
+        cc-options: /DZFEX_USE_ARM_NEON
+
+    if flag(speed)
+      if os(linux) || os(darwin) || (os(windows) && impl(ghc >= 9.4))
+        cc-options: -O3
+      elif os(windows)
+        cc-options: /O2
 
 Test-Suite quickcheck-tests
     type:       exitcode-stdio-1.0
@@ -51,6 +87,7 @@ Test-Suite quickcheck-tests
                 , bytestring>=0.9
                 , QuickCheck
                 , random
+                , entropy
                 , zfex
 
 source-repository head

@@ -48,12 +48,6 @@ Python
 
 To run the self-tests, execute ``tox`` from an unpacked source tree or git checkout.
 
-To run the tests of the Haskell API: ``runhaskell haskell/test/FECTest.hs``
-
-Note that in order to run the Haskell API tests you must have installed the
-library first due to the fact that the interpreter cannot process FEC.hs as
-it takes a reference to an FFI function.
-
 To install ``zfex`` built with custom compilation flags, execute:
 
 ``CFLAGS="-O3" pip install git+https://github.com/WojciechMigda/zfex.git``

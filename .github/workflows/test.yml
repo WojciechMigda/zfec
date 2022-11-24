@@ -30,7 +30,7 @@ jobs:
           - "pypy-3.7"
           - "pypy-3.8"
         include:
-          - os: "ubuntu-latest"
+          - os: "ubuntu-20.04"
             python-version: "3.6"
     steps:
       - name: "Check out zfex sources"

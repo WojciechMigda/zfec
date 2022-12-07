@@ -91,6 +91,11 @@ jobs:
               wheel-selector: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-*"
               arch: auto64
 
+          - os: "ubuntu-latest"
+            cibw:
+              wheel-selector: "cp311-*"
+              arch: auto64
+
           - os: "windows-latest"
             architecture: x64
             cibw:

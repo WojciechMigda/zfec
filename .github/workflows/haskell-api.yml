@@ -22,7 +22,7 @@ jobs:
       - name: "Check out zfex sources"
         uses: actions/checkout@v3
 
-      - uses: haskell/actions/setup@v2.3.2
+      - uses: haskell/actions/setup@v2.3.3
 
       - name: "Update cabal package database"
         run: cabal new-update
@@ -63,7 +63,7 @@ jobs:
       - name: "Check out zfex sources"
         uses: actions/checkout@v3
 
-      - uses: haskell/actions/setup@v2.3.2
+      - uses: haskell/actions/setup@v2.3.3
 
       - name: "Update cabal package database"
         run: cabal new-update

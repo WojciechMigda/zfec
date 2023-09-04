@@ -35,7 +35,7 @@ jobs:
             python-version: "3.6"
     steps:
       - name: "Check out zfex sources"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: "actions/download-artifact@v3"
         name: "Download generated code artifacts"
@@ -65,7 +65,7 @@ jobs:
 
     steps:
       - name: "Check out zfex sources"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Set windows-latest environment"
         shell: bash

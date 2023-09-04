@@ -49,7 +49,7 @@ jobs:
       dirty_repo: false
     steps:
       - name: "Check out zfex sources"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # This is required for EndBug/add-and-commit
           ref: ${{ github.event.pull_request.head.ref }}
@@ -144,7 +144,7 @@ jobs:
 
     steps:
       - name: Check out zfex sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # Check out the full history, including tags.  This is necessary to
           # construct non-release version numbers.
@@ -200,7 +200,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Check out zfex sources
         with:
           # Check out the full history, including tags.  This is necessary to
